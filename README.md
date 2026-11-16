@@ -13,13 +13,13 @@ An animated inflatable tube man as an embeddable web widget. It has no dependenc
 <sky-dancer color="#7d3cff" accent="#00e0c6" face="cool" style="height: 500px"></sky-dancer>
 ```
 
-The widget is 400px tall by default and crops to the dancer: its width follows its height (1.5x, plus a little per extra dancer), so it sits inline like an image rather than filling the page. Size it with CSS -- set the height and the width follows, or set both to override the crop. The dancer scales with the height and keeps its proportions.
+The widget is 400px tall by default and crops to the dancer: its width follows its height (1.35x, plus a little per extra dancer), so it sits inline like an image rather than filling the page. Size it with CSS -- set the height and the width follows, or set both to override the crop. The dancer scales with the height and keeps its proportions.
 
 | Attribute    | Default   | Meaning                                    |
 |--------------|-----------|--------------------------------------------|
 | `color`      | `#ff3b30` | body colour                                |
 | `accent`     | `#ffd60a` | arms and hair colour                       |
-| `height`     | `0.8`     | body height as a fraction of the widget    |
+| `height`     | `0.85`    | body height as a fraction of the widget    |
 | `girth`      | `64`      | body thickness (px at 1000px widget height) |
 | `arm-length` | `0.32`    | arm length as a fraction of body height    |
 | `speed`      | `1`       | animation speed                            |

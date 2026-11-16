@@ -4,7 +4,7 @@
 //   <sky-dancer color="#ff3b30" accent="#ffd60a" face="cool" style="height: 500px"></sky-dancer>
 //
 // Every attribute is optional (defaults below). The widget crops to the dancer:
-// 400px tall and 1.5x as wide, plus a bit per extra dancer, unless the page styles it.
+// 400px tall and 1.35x as wide, plus a bit per extra dancer, unless the page styles it.
 
 (() => {
   if (customElements.get('sky-dancer')) return;  // script included twice
@@ -12,7 +12,7 @@
   const DEFAULTS = {
     color: '#ff3b30',
     accent: '#ffd60a',
-    height: 0.8,      // fraction of canvas height
+    height: 0.85,     // fraction of canvas height
     girth: 64,        // px at REF_HEIGHT; scales with the widget
     armLength: 0.32,  // fraction of body height
     speed: 1,
@@ -70,7 +70,7 @@
   const GROUND = 48;      // matches the ground strip in STYLE; without a background the fan sits at the bottom edge
   // Width per unit of height: the dancer's own span, measured at the wildest
   // wind, so the embed is a box around it rather than the whole page width.
-  const CROP_RATIO = 1.5;
+  const CROP_RATIO = 1.35;
   const MAX_COUNT = 6;
   // gap between dancers, in widget heights: they stand shoulder to shoulder,
   // so a crowd clusters instead of each one claiming a full box
@@ -278,7 +278,7 @@
 
     // Every so often the air can't keep up and the dancer sags: it dips lower
     // in the body for a moment, then fills again. `lift` is 1 at full height.
-    let sag = { start: 6, dur: 1.1, depth: 0.4 };
+    let sag = { start: 6, dur: 1.1, depth: 0.4, side: 1 };
     let lift = 1;
 
     function updateLift(t) {
@@ -287,6 +287,7 @@
           start: t + 5 + Math.random() * 9,
           dur: 0.9 + Math.random() * 0.8,
           depth: 0.25 + Math.random() * 0.3,
+          side: Math.random() < 0.5 ? -1 : 1,  // in calm it falls either way
         };
       }
       const p = (t - sag.start) / sag.dur;
@@ -327,8 +328,10 @@
       // The fabric is the same length whatever the pressure, so a sag bows the
       // tube over rather than shortening it: the head drops, the cloth stays.
       // It falls downwind, but still has to fall somewhere in dead calm.
-      const blown = Math.tanh(wind * 4);
-      const falls = blown + 0.6 * (1 - Math.abs(blown));
+      // one direction, never a tug-of-war: downwind, or the sag's own way in calm
+      const blown = Math.abs(Math.tanh(wind * 4));
+      const dir = Math.abs(wind) < 0.02 ? sag.side : Math.sign(wind);
+      const falls = dir * (blown + 0.6 * (1 - blown));
       // 0.042 keeps the worst case (deepest sag, full wind) inside a right
       // angle, past which the floor clamp would eat the tube's length
       const droop = (1 - lift) * 0.042 * falls;
@@ -412,6 +415,16 @@
         ctx.fill();
       }
       ctx.restore();
+    }
+
+    // a soft patch of ground under the fan, leaning away with the air
+    function drawShadow(x, g) {
+      const base = H - ground();
+      const w = g * 1.5 * (1 + Math.abs(wind) * 0.15), h = g * 0.28;
+      ctx.fillStyle = 'rgba(0,0,0,.17)';
+      ctx.beginPath();
+      ctx.ellipse(x + wind * g * 0.3, base + h * 0.35, w, h, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     function drawFan(x, g) {
@@ -591,6 +604,8 @@
       ctx.lineJoin = 'round';
 
       if (cfg.night) for (const d of dancers) drawGlow(d.x, d.girth);
+      // only with a ground to cast it on; a transparent embed would just get a blot
+      if (cfg.background) for (const d of dancers) drawShadow(d.x, d.girth);
 
       for (const { body, arms, hair, girth, x, t } of dancers) {
         for (const strand of hair) strokeChain(strand, girth * 0.1 + 4, OUTLINE);
