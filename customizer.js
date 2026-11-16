@@ -2,11 +2,15 @@
 // attribute on the <sky-dancer> widget.
 const dancer = document.getElementById('dancer');
 const restore = document.getElementById('restore');
+const hideButton = document.getElementById('hide');
 
-// the widget hides itself on close; keep the stage so the panel doesn't jump
-dancer.addEventListener('close', () => { restore.hidden = false; });
+// hide() and show() are the widget's API; the stage stays put either way
+hideButton.addEventListener('click', () => {
+  dancer.hide();
+  restore.hidden = false;
+});
 restore.addEventListener('click', () => {
-  dancer.style.display = '';
+  dancer.show();
   restore.hidden = true;
 });
 const inputs = [...document.querySelectorAll('#controls [data-key]')];

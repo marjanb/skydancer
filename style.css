@@ -36,7 +36,7 @@ body {
   background: var(--bg);
 }
 
-/* the stage holds its size even when the dancer dismisses itself */
+/* the stage holds its size even when the dancer is hidden */
 #stage {
   flex: 1;
   min-width: 0;
