@@ -395,16 +395,6 @@
       ctx.restore();
     }
 
-    // a soft patch of ground under the fan, leaning away with the air
-    function drawShadow(x, g) {
-      const base = H - ground();
-      const w = g * 1.5 * (1 + Math.abs(wind) * 0.15), h = g * 0.28;
-      ctx.fillStyle = 'rgba(0,0,0,.17)';
-      ctx.beginPath();
-      ctx.ellipse(x + wind * g * 0.3, base - h * 0.3, w, h, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
     function drawFan(x, g) {
       const w = g * 1.7, h = g * 0.55;
       ctx.fillStyle = '#3a3f4b';
@@ -552,7 +542,6 @@
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      for (const d of dancers) drawShadow(d.x, d.girth);
 
       for (const { body, arms, hair, girth, x, t } of dancers) {
         for (const strand of hair) strokeChain(strand, girth * 0.1 + 4, OUTLINE);
