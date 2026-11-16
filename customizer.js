@@ -13,7 +13,9 @@ try {
 
 function save() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(Object.fromEntries(inputs.map(el => [el.dataset.key, readInput(el)]))));
+    const state = Object.fromEntries(inputs.map(el => [el.dataset.key, readInput(el)]));
+    state.caption = caption.value;  // the caption is page content, not an attribute
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {}
 }
 
@@ -30,7 +32,11 @@ function writeInput(el, value) {
 
 // @1 follows the newest v1.x.x tag; jsDelivr generates the .min.js on the fly
 const CDN_URL = 'https://cdn.jsdelivr.net/gh/marjanbajct2/skydancer@1/skydancer.min.js';
+const caption = document.getElementById('caption');
 const embedCode = document.getElementById('embed-code');
+
+const escapeHtml = s => s.replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
+const escapeAttr = s => escapeHtml(String(s)).replace(/"/g, '&quot;');
 const copyButton = document.getElementById('copy-embed');
 
 // readout next to each slider
@@ -51,8 +57,9 @@ function apply(el) {
     .filter(input => !(input.dataset.key === 'night' && !input.checked))
     .filter(input => !(input.dataset.key === 'count' && +input.value === 1))
     .filter(input => !(/^(night|glow)-color$/.test(input.dataset.key) && !document.querySelector('[data-key="night"]').checked))
-    .map(input => `${input.dataset.key}="${readInput(input)}"`).join(' ');
-  embedCode.value = `<script src="${CDN_URL}"></script>\n<sky-dancer ${attrs} style="height: 500px"></sky-dancer>`;
+    .filter(input => !(input.dataset.key === 'sign' && !input.value.trim()))
+    .map(input => `${input.dataset.key}="${escapeAttr(readInput(input))}"`).join(' ');
+  embedCode.value = `<script src="${CDN_URL}"></script>\n<sky-dancer ${attrs} style="height: 500px">${escapeHtml(caption.value)}</sky-dancer>`;
 }
 
 copyButton.addEventListener('click', async () => {
@@ -101,12 +108,23 @@ for (const field of document.querySelectorAll('.hex')) {
   field.addEventListener('blur', () => { field.value = picker.value.toUpperCase(); });
 }
 
+// the caption is the element's own content, so the page can style it
+if (typeof saved.caption === 'string') caption.value = saved.caption;
+applyCaption();
+caption.addEventListener('input', () => { applyCaption(); save(); });
+
+function applyCaption() {
+  dancer.textContent = caption.value;
+  if (inputs.length) apply(inputs[0]);  // the snippet carries the caption too
+}
+
 document.getElementById('randomize').addEventListener('click', () => {
   for (const el of inputs) {
     if (el.type === 'checkbox') el.checked = Math.random() < 0.7;
     else if (el.type === 'range') el.value = +el.min + Math.random() * (el.max - el.min);
     else if (el.type === 'color') el.value = `#${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, '0')}`;
-    else el.selectedIndex = Math.floor(Math.random() * el.options.length);
+    else if (el.tagName === 'SELECT') el.selectedIndex = Math.floor(Math.random() * el.options.length);
+    // anything else (the sign's free text) is left alone
     apply(el);
   }
   save();

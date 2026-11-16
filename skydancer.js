@@ -25,6 +25,7 @@
     nightColor: '#1b2748',  // the night sky at the horizon; the rest is shaded from it
     glowColor: '#ffecaa',   // the spotlight the dancer stands in at night
     count: 1,         // how many dancers stand together
+    sign: '',         // words on a board at their feet; empty for none
   };
 
   const OFF = ['false', '0', 'no', 'off'];
@@ -80,6 +81,8 @@
     :host {
       display: inline-block;
       vertical-align: middle;
+      position: relative;
+      container-type: size;
       height: 400px;
       aspect-ratio: calc(${CROP_RATIO} + (var(--count, 1) - 1) * ${SPACING});
     }
@@ -95,6 +98,23 @@
     }
     /* last, so transparent wins over night */
     canvas.bare { background: none; }
+
+    /* whatever the page puts inside the tag, held still so it stays readable */
+    .caption {
+      position: absolute;
+      left: 5%;
+      right: 5%;
+      top: 5%;
+      text-align: center;
+      pointer-events: none;  /* the dancer behind is still pokeable */
+      font-family: system-ui, -apple-system, sans-serif;
+      font-weight: 800;
+      line-height: 1.1;
+      font-size: 24px;
+      font-size: clamp(13px, 11cqh, 64px);
+      color: #fff;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, .55), 0 1px 2px rgba(0, 0, 0, .7);
+    }
   `;
 
   // Runs one dancer on a canvas, reading the live cfg object every frame.
@@ -342,6 +362,33 @@
       }
     }
 
+    function drawSign(text) {
+      const w = Math.min(W * 0.82, H * 1.05), h = H * 0.17;
+      const lw = Math.max(3, H * 0.006);
+      const x = W / 2;
+      // without a background the ground line sits lower, so keep the board on canvas
+      const top = Math.min(H - ground() - h * 0.78, H - h - lw);
+
+      ctx.lineWidth = lw;
+      ctx.strokeStyle = OUTLINE;
+      ctx.fillStyle = '#fff8e7';
+      ctx.beginPath();
+      ctx.roundRect(x - w / 2, top, w, h, h * 0.14);
+      ctx.fill();
+      ctx.stroke();
+
+      // shrink to fit rather than spill over the edges
+      const fit = h * 0.52;
+      ctx.font = `800 ${fit}px system-ui, -apple-system, sans-serif`;
+      const room = w * 0.86;
+      const size = Math.min(fit, fit * room / Math.max(1, ctx.measureText(text).width));
+      ctx.font = `800 ${size}px system-ui, -apple-system, sans-serif`;
+      ctx.fillStyle = OUTLINE;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x, top + h / 2);
+    }
+
     function draw(dancers) {
       syncLook();
       ctx.clearRect(0, 0, W, H);
@@ -358,6 +405,9 @@
         drawFace(body[Math.round(BODY_SEGS * 0.87)], girth, t);
         drawFan(x, girth);
       }
+
+      const sign = String(cfg.sign ?? '').trim();
+      if (sign) drawSign(sign);
     }
 
     // ---- loop ----
@@ -420,7 +470,7 @@
       super();
       this.cfg = Object.fromEntries(KEYS.map(key => [key, parse(key, this.getAttribute(attrName(key)))]));
       const root = this.attachShadow({ mode: 'open' });
-      root.innerHTML = `<style>${STYLE}</style><canvas></canvas>`;
+      root.innerHTML = `<style>${STYLE}</style><canvas></canvas><div class="caption"><slot></slot></div>`;
       this.canvas = root.querySelector('canvas');
     }
 

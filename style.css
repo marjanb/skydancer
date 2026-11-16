@@ -151,6 +151,19 @@ select {
   cursor: pointer;
 }
 
+.note { margin: -4px 0 0; color: var(--muted); font-size: 12px; }
+
+#controls input[type="text"]:not(.hex) {
+  width: 100%;
+  padding: 8px 10px;
+  font: inherit;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
 .hex {
   width: 100%;
   padding: 4px 6px;
