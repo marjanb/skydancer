@@ -43,7 +43,16 @@ function placeDancer() {
   dancer.style.top = `${spot.y}px`;
 }
 
-siteUrl.addEventListener('change', () => { showSite(); save(); });
+siteUrl.addEventListener('change', () => {
+  showSite();
+  // over a real page you want the dancer, not a blue box; they can put it back
+  const sky = document.querySelector('[data-key="background"]');
+  if (stage.classList.contains('previewing') && sky.checked) {
+    sky.checked = false;
+    apply(sky);
+  }
+  save();
+});
 dancerSize.addEventListener('input', () => {
   placeDancer();
   if (inputs.length) apply(inputs[0]);  // the snippet carries the height

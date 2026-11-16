@@ -76,6 +76,9 @@ body {
 
 #stage.previewing #dancer:active { cursor: grabbing; }
 
+/* over a real page the checkerboard would hide it; the page is the backdrop */
+#stage.previewing #dancer[background="false"] { background: none; }
+
 /* the page behind must not swallow the pointer mid-drag */
 #stage.dragging #site { pointer-events: none; }
 
