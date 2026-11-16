@@ -4,7 +4,7 @@
 //   <sky-dancer color="#ff3b30" accent="#ffd60a" face="cool" style="height: 500px"></sky-dancer>
 //
 // Every attribute is optional (defaults below). The widget crops to the dancer:
-// 400px tall and 1.2x as wide, unless the page styles it otherwise.
+// 400px tall and 1.4x as wide, unless the page styles it otherwise.
 
 (() => {
   if (customElements.get('sky-dancer')) return;  // script included twice
@@ -12,7 +12,7 @@
   const DEFAULTS = {
     color: '#ff3b30',
     accent: '#ffd60a',
-    height: 0.68,     // fraction of canvas height
+    height: 0.8,      // fraction of canvas height
     girth: 64,        // px at REF_HEIGHT; scales with the widget
     armLength: 0.32,  // fraction of body height
     speed: 1,
@@ -46,7 +46,7 @@
   const GROUND = 48;      // matches the ground strip in STYLE; without a background the fan sits at the bottom edge
   // Width per unit of height: the dancer's own span, measured at the wildest
   // wind, so the embed is a box around it rather than the whole page width.
-  const CROP_RATIO = 1.2;
+  const CROP_RATIO = 1.4;
   const OUTLINE = '#1a1a2e';
 
   const STYLE = `

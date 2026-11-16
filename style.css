@@ -144,6 +144,14 @@ select {
   cursor: pointer;
 }
 
+.color span { display: flex; flex-direction: column; line-height: 1.25; }
+.color output {
+  font-weight: 500;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--muted);
+}
+
 .color input {
   flex: none;
   width: 30px;

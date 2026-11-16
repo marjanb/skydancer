@@ -35,7 +35,8 @@ const copyButton = document.getElementById('copy-embed');
 
 // readout next to each slider
 const pct = v => `${Math.round(v * 100)}%`;
-const FORMATS = { height: pct, 'arm-length': pct, girth: String };  // girth is relative now, not px
+const hex = v => v.toUpperCase();
+const FORMATS = { height: pct, 'arm-length': pct, girth: String, color: hex, accent: hex };
 
 function apply(el) {
   dancer.setAttribute(el.dataset.key, String(readInput(el)));
