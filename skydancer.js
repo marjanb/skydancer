@@ -4,7 +4,7 @@
 //   <sky-dancer color="#ff3b30" accent="#ffd60a" face="cool" style="height: 500px"></sky-dancer>
 //
 // Every attribute is optional (defaults below). The widget crops to the dancer:
-// 400px tall and 1.5x as wide per dancer, unless the page styles it otherwise.
+// 400px tall and 1.5x as wide, plus a bit per extra dancer, unless the page styles it.
 
 (() => {
   if (customElements.get('sky-dancer')) return;  // script included twice
@@ -52,6 +52,9 @@
   // wind, so the embed is a box around it rather than the whole page width.
   const CROP_RATIO = 1.5;
   const MAX_COUNT = 6;
+  // gap between dancers, in widget heights: they stand shoulder to shoulder,
+  // so a crowd clusters instead of each one claiming a full box
+  const SPACING = 0.55;
   // a crowd looks like a crowd when they aren't all the same size
   const SIZES = [1, 0.84, 0.94, 0.8, 0.9, 0.87];
   const OUTLINE = '#1a1a2e';
@@ -62,7 +65,7 @@
       display: inline-block;
       vertical-align: middle;
       height: 400px;
-      aspect-ratio: calc(${CROP_RATIO} * var(--count, 1));
+      aspect-ratio: calc(${CROP_RATIO} + (var(--count, 1) - 1) * ${SPACING});
     }
     canvas {
       display: block;
@@ -191,8 +194,10 @@
       }
 
       const n = count();
+      const gap = SPACING * H;
       // smallest first, so they read as standing further back
-      return Array.from({ length: n }, (_, i) => dancerAt(t + i * 3.7, W * (i + 0.5) / n, SIZES[i % SIZES.length]))
+      return Array.from({ length: n }, (_, i) =>
+        dancerAt(t + i * 3.7, W / 2 + (i - (n - 1) / 2) * gap, SIZES[i % SIZES.length]))
         .sort((a, b) => a.girth - b.girth);
     }
 

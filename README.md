@@ -13,7 +13,7 @@ An animated inflatable tube man as an embeddable web widget. It has no dependenc
 <sky-dancer color="#7d3cff" accent="#00e0c6" face="cool" style="height: 500px"></sky-dancer>
 ```
 
-The widget is 400px tall by default and crops to the dancer: its width follows its height (1.5x per dancer), so it sits inline like an image rather than filling the page. Size it with CSS -- set the height and the width follows, or set both to override the crop. The dancer scales with the height and keeps its proportions.
+The widget is 400px tall by default and crops to the dancer: its width follows its height (1.5x, plus a little per extra dancer), so it sits inline like an image rather than filling the page. Size it with CSS -- set the height and the width follows, or set both to override the crop. The dancer scales with the height and keeps its proportions.
 
 | Attribute    | Default   | Meaning                                    |
 |--------------|-----------|--------------------------------------------|
@@ -29,7 +29,7 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `hair`       | `true`    | `false` hides the hair                     |
 | `background` | `true`    | `false` drops the sky and ground (transparent) |
 | `night`      | `false`   | `true` for a dark sky and a spotlit dancer |
-| `count`      | `1`       | how many dancers share the ground (max 6)  |
+| `count`      | `1`       | how many dancers stand together (max 6)    |
 
 Poking a dancer knocks the air out of it. Where the viewer's system asks for reduced motion, it holds a still pose instead of animating.
 
