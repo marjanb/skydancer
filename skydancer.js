@@ -217,6 +217,23 @@
       wind += (target - wind) * Math.min(1, dt * 4);
     }
 
+    // Every so often the air gives out: the dancer folds to the ground, lies
+    // there a moment, then fills back up. `lift` is 1 standing, 0 flat.
+    let slump = { start: 9, dur: 3 };
+    let lift = 1;
+
+    function updateLift(t) {
+      if (t > slump.start + slump.dur) {
+        slump = { start: t + 8 + Math.random() * 14, dur: 2.5 + Math.random() * 1.5 };
+      }
+      const p = (t - slump.start) / slump.dur;
+      if (p < 0 || p > 1) { lift = 1; return; }
+      const ease = x => x * x * (3 - 2 * x);
+      lift = p < 0.22 ? 1 - ease(p / 0.22)       // the air goes out quickly
+        : p < 0.6 ? 0                             // and it lies there
+        : ease((p - 0.6) / 0.4);                  // before filling again
+    }
+
     // bend that swings a loose chain (arm, hair) round to point downwind
     function blow(a) {
       return Math.abs(wind) * Math.sin(Math.sign(wind) * 1.4 - a);
@@ -242,14 +259,18 @@
 
     // one dancer, `k` times the configured size, standing at x
     function dancerAt(t, x, k) {
-      const w = cfg.wildness * (1 + punch * 2.5);
+      // limp fabric neither stands up, flails, nor kinks
+      const limp = 0.12 + 0.88 * lift;
+      const w = cfg.wildness * (1 + punch * 2.5) * limp;
       const girth = cfg.girth * k;
       // cap so tall settings in short widgets don't poke out of the top
-      const height = Math.min(H * cfg.height, H - ground() - cfg.girth) * k;
+      const height = Math.min(H * cfg.height, H - ground() - cfg.girth) * k * limp;
+      // folds the way the air was blowing, easing through a change of direction
+      const droop = (1 - lift) * 0.2 * Math.tanh(wind * 4);
 
       // start half a girth up so the round end cap stays hidden behind the fan
       const body = chain(x, H - ground() - girth / 2, 0, BODY_SEGS, height / BODY_SEGS, u =>
-        w * (0.05 * Math.sin(t * 2.1 - u * 5) + 0.035 * Math.sin(t * 3.7 - u * 9 + 1.3)) * (0.3 + u) + kinkBend(u, t) + wind * 0.03);
+        w * (0.05 * Math.sin(t * 2.1 - u * 5) + 0.035 * Math.sin(t * 3.7 - u * 9 + 1.3)) * (0.3 + u) + kinkBend(u, t) * limp + wind * 0.03 + droop);
 
       const shoulder = body[Math.round(BODY_SEGS * 0.66)];
       const arms = [-1, 1].map(side =>
@@ -517,6 +538,7 @@
       // ResizeObserver misses a move to a screen with a different pixel density
       if ((window.devicePixelRatio || 1) !== lastDpr) resize();
       updateWind(t, dt);
+      updateLift(t);
       render();
       raf = requestAnimationFrame(frame);
     }
@@ -526,6 +548,7 @@
       if (!visible) return;
       if (reduced.matches) {
         punch = 0;  // nothing will decay it while the pose is held
+        updateLift(t);  // or the pose could be stuck mid-collapse
         return render();
       }
       last = performance.now();
