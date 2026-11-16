@@ -4,7 +4,7 @@
 //   <sky-dancer color="#ff3b30" accent="#ffd60a" face="cool" style="height: 500px"></sky-dancer>
 //
 // Every attribute is optional (defaults below). The widget crops to the dancer:
-// 400px tall and 1.35x as wide, plus a bit per extra dancer, unless the page styles it.
+// 400px tall and 1.25x as wide, plus a bit per extra dancer, unless the page styles it.
 
 (() => {
   if (customElements.get('sky-dancer')) return;  // script included twice
@@ -20,11 +20,6 @@
     wind: 1,          // 0 = calm; scales pointer wind and gusts
     face: 'happy',    // happy | surprised | cool
     hair: true,
-    background: true, // false = transparent, no sky or ground
-    night: false,     // dark sky, dancer lit by a spotlight
-    nightColor: '#1b2748',  // the night sky at the horizon; the rest is shaded from it
-    glowColor: '#ffecaa',   // the spotlight the dancer stands in at night
-    glow: 1,                // how strong that spotlight is; 0 for none
     count: 1,         // how many dancers stand together
     sign: '',         // words in a speech bubble by the dancer; empty for none
     bubble: 'drawn',  // drawn | box | burst
@@ -32,20 +27,6 @@
   };
 
   const OFF = ['false', '0', 'no', 'off'];
-
-  function toRgb(hex) {
-    const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex).trim());
-    if (!m) return null;
-    const d = m[1].length === 3 ? [...m[1]].map(c => c + c).join('') : m[1];
-    const n = parseInt(d, 16);
-    return [n >> 16 & 255, n >> 8 & 255, n & 255];
-  }
-
-  // one hex colour, dimmed by `f`, for shading the night sky out of a single value
-  function shade(hex, f) {
-    const c = toRgb(hex);
-    return c && `rgb(${c.map(v => Math.round(v * f)).join(',')})`;
-  }
 
   const attrName = key => key.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`);
   const KEYS = Object.keys(DEFAULTS);
@@ -67,10 +48,10 @@
   // Everything is drawn in units of a REF_HEIGHT-tall widget and scaled to the
   // real height, so the dancer keeps its proportions at any size.
   const REF_HEIGHT = 1000;
-  const GROUND = 48;      // matches the ground strip in STYLE; without a background the fan sits at the bottom edge
+  const GROUND = 48;      // room below the fan, so its base isn't flush with the edge
   // Width per unit of height: the dancer's own span, measured at the wildest
   // wind, so the embed is a box around it rather than the whole page width.
-  const CROP_RATIO = 1.35;
+  const CROP_RATIO = 1.25;
   const MAX_COUNT = 6;
   // gap between dancers, in widget heights: they stand shoulder to shoulder,
   // so a crowd clusters instead of each one claiming a full box
@@ -155,14 +136,8 @@
       display: block;
       width: 100%;
       height: 100%;
-      /* sky, then a hard stop into the ground strip the fan sits on */
-      background: linear-gradient(#3d9bff, #c9e8ff ${100 - GROUND / REF_HEIGHT * 100}%, #58b368 ${100 - GROUND / REF_HEIGHT * 100}%, #3f8f50);
+      /* no backdrop of its own: it stands on whatever the page puts behind it */
     }
-    canvas.night {
-      background: linear-gradient(var(--night-top), var(--night-sky) ${100 - GROUND / REF_HEIGHT * 100}%, var(--night-ground) ${100 - GROUND / REF_HEIGHT * 100}%, var(--night-deep));
-    }
-    /* last, so transparent wins over night */
-    canvas.bare { background: none; }
   `;
 
   // Runs one dancer on a canvas, reading the live cfg object every frame.
@@ -203,7 +178,7 @@
     const count = () => Math.max(1, Math.min(MAX_COUNT, Math.round(cfg.count) || 1));
 
     // height of the strip below the fan's base line: the ground, or just enough to show the whole fan
-    const ground = () => cfg.background ? GROUND : Math.ceil(cfg.girth * 0.25);
+    const ground = () => Math.ceil(cfg.girth * 0.25);
 
     function chain(x, y, a, n, segLen, bend) {
       const floor = H - ground();
@@ -417,6 +392,17 @@
       ctx.restore();
     }
 
+    function drawFan(x, g) {
+      const w = g * 1.7, h = g * 0.55;
+      ctx.fillStyle = '#3a3f4b';
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(x - w / 2, H - ground() - h * 0.6, w, h, 8);
+      ctx.fill();
+      ctx.stroke();
+    }
+
     // a soft patch of ground under the fan, leaning away with the air
     function drawShadow(x, g) {
       const base = H - ground();
@@ -436,34 +422,6 @@
       ctx.roundRect(x - w / 2, H - ground() - h * 0.6, w, h, 8);
       ctx.fill();
       ctx.stroke();
-    }
-
-    function drawGlow(x, g) {
-      const strength = Math.max(0, Math.min(2, cfg.glow));
-      if (!strength) return;
-      const base = H - ground(), r = H * 0.75;
-      const lit = (toRgb(cfg.glowColor) || toRgb(DEFAULTS.glowColor)).join(',');
-      const glow = ctx.createRadialGradient(x, base, g * 0.5, x, base, r);
-      glow.addColorStop(0, `rgba(${lit},${0.3 * strength})`);
-      glow.addColorStop(1, `rgba(${lit},0)`);
-      ctx.fillStyle = glow;
-      ctx.fillRect(x - r, base - r, r * 2, r * 2);
-    }
-
-    // the sky lives in CSS but the truth is in cfg, so mirror it onto the canvas
-    let litBy = '';
-
-    function syncLook() {
-      canvas.classList.toggle('night', !!cfg.night);
-      canvas.classList.toggle('bare', !cfg.background);
-
-      // every frame runs through here, so only touch style when the colour moves
-      const base = shade(cfg.nightColor, 1) ? cfg.nightColor : DEFAULTS.nightColor;
-      if (base === litBy) return;
-      litBy = base;
-      for (const [name, f] of [['top', 0.35], ['sky', 1], ['ground', 0.62], ['deep', 0.42]]) {
-        canvas.style.setProperty(`--night-${name}`, shade(base, f));
-      }
     }
 
     // A comic speech balloon that floats beside the head. It eases toward the
@@ -598,14 +556,11 @@
     }
 
     function draw(dancers) {
-      syncLook();
       ctx.clearRect(0, 0, W, H);
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      if (cfg.night) for (const d of dancers) drawGlow(d.x, d.girth);
-      // only with a ground to cast it on; a transparent embed would just get a blot
-      if (cfg.background) for (const d of dancers) drawShadow(d.x, d.girth);
+      for (const d of dancers) drawShadow(d.x, d.girth);
 
       for (const { body, arms, hair, girth, x, t } of dancers) {
         for (const strand of hair) strokeChain(strand, girth * 0.1 + 4, OUTLINE);
@@ -672,7 +627,6 @@
       visible = entry.isIntersecting;
       start();
     });
-    syncLook();  // before the first frame, so the right sky is up from the start
     visibility.observe(canvas);
     reduced.addEventListener('change', start, { signal: events.signal });
     ready = true;

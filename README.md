@@ -1,10 +1,10 @@
 # Skydancer
 
-![Three skydancers: a default one, a night one, and a pair](docs/preview.png)
+![Three skydancers side by side](docs/preview.png)
 
 **[Try it live](https://marjanb.github.io/skydancer/)** - tweak one and copy its embed code.
 
-An animated inflatable tube man as an embeddable web widget. It has no dependencies and pauses itself while scrolled out of view. The dancer leans toward the mouse pointer and gets blown around by random gusts.
+An animated inflatable tube man as an embeddable web widget. It is transparent, has no dependencies, and pauses itself while scrolled out of view. The dancer leans toward the mouse pointer and gets blown around by random gusts.
 
 ## Embed
 
@@ -13,7 +13,7 @@ An animated inflatable tube man as an embeddable web widget. It has no dependenc
 <sky-dancer color="#7d3cff" accent="#00e0c6" face="cool" style="height: 500px"></sky-dancer>
 ```
 
-The widget is 400px tall by default and crops to the dancer: its width follows its height (1.35x, plus a little per extra dancer), so it sits inline like an image rather than filling the page. Size it with CSS -- set the height and the width follows, or set both to override the crop. The dancer scales with the height and keeps its proportions.
+The widget is 400px tall by default and crops to the dancer: its width follows its height (1.25x, plus a little per extra dancer), so it sits inline like an image rather than filling the page. Size it with CSS -- set the height and the width follows, or set both to override the crop. The dancer scales with the height and keeps its proportions.
 
 | Attribute    | Default   | Meaning                                    |
 |--------------|-----------|--------------------------------------------|
@@ -27,11 +27,6 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `wind`       | `1`       | wind strength; `0` is calm                 |
 | `face`       | `happy`   | `happy`, `surprised` or `cool`             |
 | `hair`       | `true`    | `false` hides the hair                     |
-| `background` | `true`    | `false` drops the sky and ground (transparent) |
-| `night`      | `false`   | `true` for a dark sky and a spotlit dancer |
-| `night-color`| `#1b2748` | the night sky's colour; the rest is shaded from it |
-| `glow-color` | `#ffecaa` | the spotlight the dancer stands in at night |
-| `glow`       | `1`       | how strong that spotlight is; `0` for none |
 | `count`      | `1`       | how many dancers stand together (max 6)    |
 | `sign`       | none      | words in a speech bubble by the dancer     |
 | `bubble`     | `drawn`   | bubble shape: `drawn`, `box` or `burst`    |

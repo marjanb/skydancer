@@ -2,88 +2,56 @@
 // attribute on the <sky-dancer> widget.
 const dancer = document.getElementById('dancer');
 const restore = document.getElementById('restore');
-const stage = document.getElementById('stage');
-const site = document.getElementById('site');
-const siteUrl = document.getElementById('site-url');
 const dancerSize = document.getElementById('dancer-size');
-const spot = { x: 60, y: 120 };  // where the dancer sits over a previewed page
+const stage = document.getElementById('stage');
 const hideButton = document.getElementById('hide');
 
-// a page behind the dancer, to see how it would sit on a real site
-function pageUrl(typed) {
-  try {
-    const url = new URL(/^[a-z][a-z0-9+.-]*:/i.test(typed) ? typed : `https://${typed}`);
-    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
-  } catch {
-    return null;  // not a address at all, so nothing to show
-  }
-}
-
-function showSite() {
-  const url = pageUrl(siteUrl.value.trim());
-  stage.classList.toggle('previewing', !!url);
-  site.hidden = !url;
-  if (url) {
-    if (site.src !== url) site.src = url;
-  } else {
-    site.removeAttribute('src');
-  }
-  placeDancer();
-}
-
+// the dancer shows at the size you'd embed it, wherever you drag it
 const dancerHeight = () => Math.min(1200, Math.max(80, +dancerSize.value || 400));
+const spot = { x: null, y: null };
 
 function placeDancer() {
-  if (!stage.classList.contains('previewing')) {
-    dancer.style.left = dancer.style.top = dancer.style.height = '';
-    return;
-  }
   dancer.style.height = `${dancerHeight()}px`;
+  const area = stage.getBoundingClientRect();
+  const box = dancer.getBoundingClientRect();
+  if (spot.x === null) {  // first sight of it: stand it in the middle
+    spot.x = Math.round((area.width - box.width) / 2);
+    spot.y = Math.round((area.height - box.height) / 2);
+  }
+  // never off the stage, or a reload would bring it back out of reach
+  spot.x = Math.round(Math.min(Math.max(0, area.width - box.width), Math.max(0, spot.x)));
+  spot.y = Math.round(Math.min(Math.max(0, area.height - box.height), Math.max(0, spot.y)));
   dancer.style.left = `${spot.x}px`;
   dancer.style.top = `${spot.y}px`;
 }
 
-siteUrl.addEventListener('change', () => {
-  showSite();
-  // over a real page you want the dancer, not a blue box; they can put it back
-  const sky = document.querySelector('[data-key="background"]');
-  if (stage.classList.contains('previewing') && sky.checked) {
-    sky.checked = false;
-    apply(sky);
-  }
-  save();
-});
-dancerSize.addEventListener('input', () => {
-  placeDancer();
-  if (inputs.length) apply(inputs[0]);  // the snippet carries the height
-  save();
-});
-
-// drag it around the page behind
 dancer.addEventListener('pointerdown', e => {
-  if (!stage.classList.contains('previewing')) return;
   const held = dancer.getBoundingClientRect();
   const grabX = e.clientX - held.left, grabY = e.clientY - held.top;
-  stage.classList.add('dragging');
 
   const move = ev => {
     const area = stage.getBoundingClientRect();
-    const box = dancer.getBoundingClientRect();
-    // never off the stage, or a reload would bring it back out of reach
-    spot.x = Math.round(Math.min(area.width - box.width, Math.max(0, ev.clientX - area.left - grabX)));
-    spot.y = Math.round(Math.min(area.height - box.height, Math.max(0, ev.clientY - area.top - grabY)));
+    spot.x = ev.clientX - area.left - grabX;
+    spot.y = ev.clientY - area.top - grabY;
     placeDancer();
   };
   const drop = () => {
     removeEventListener('pointermove', move);
     removeEventListener('pointerup', drop);
     removeEventListener('pointercancel', drop);  // a touch can be taken away mid-drag
-    stage.classList.remove('dragging');
     save();
   };
   addEventListener('pointermove', move);
   addEventListener('pointerup', drop);
   addEventListener('pointercancel', drop);
+});
+
+addEventListener('resize', placeDancer);
+
+dancerSize.addEventListener('input', () => {
+  placeDancer();
+  if (inputs.length) apply(inputs[0]);  // the snippet carries the height
+  save();
 });
 
 // hide() and show() are the widget's API; the stage stays put either way
@@ -110,7 +78,7 @@ try {
 function save() {
   try {
     const state = Object.fromEntries(inputs.map(el => [el.dataset.key, readInput(el)]));
-    Object.assign(state, { url: siteUrl.value, size: dancerSize.value, spot });
+    Object.assign(state, { size: dancerSize.value, spot });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {}
 }
@@ -154,10 +122,7 @@ function apply(el) {
   if (el.type === 'range') el.style.setProperty('--fill', `${(el.value - el.min) / (el.max - el.min) * 100}%`);
   const attrs = inputs
     // leave out anything already at the widget's own default
-    .filter(input => !(input.dataset.key === 'background' && input.checked))
-    .filter(input => !(input.dataset.key === 'night' && !input.checked))
     .filter(input => !(input.dataset.key === 'count' && +input.value === 1))
-    .filter(input => !(/^(glow|(night|glow)-color)$/.test(input.dataset.key) && !document.querySelector('[data-key="night"]').checked))
     .filter(input => !(input.dataset.key === 'sign' && !input.value.trim()))
     .filter(input => !(input.dataset.key === 'closable' && input.checked))
     .map(input => `${input.dataset.key}="${escapeAttr(readInput(input))}"`).join(' ');
@@ -189,10 +154,9 @@ wireCopy(copyTag, embedTag, 'Copy tag');
 const cfgKey = key => key.replace(/-(\w)/g, (_, c) => c.toUpperCase());
 const OFF = ['false', '0', 'no', 'off'];  // the same values the widget treats as off
 
-if (typeof saved.url === 'string') siteUrl.value = saved.url;
 if (saved.size) dancerSize.value = saved.size;
 if (saved.spot) Object.assign(spot, saved.spot);
-showSite();
+placeDancer();
 
 for (const el of inputs) {
   const key = el.dataset.key;

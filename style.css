@@ -41,49 +41,26 @@ body {
   flex: 1;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;  /* a big dancer in a small window crops, never squashes */
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-#dancer {
-  /* the customizer wants the whole stage, not the widget's cropped default */
-  width: 100%;
-  height: 100%;
-  aspect-ratio: auto;
-}
-
-#restore { flex: none; }
-
 #stage { position: relative; }
 
-#site {
+#dancer {
+  /* its own shape at the size you'd embed it, so the crop is what you see */
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  background: #fff;
-}
-
-/* with a page behind it the dancer is a loose sticker you can drag about */
-#stage.previewing #dancer {
-  position: absolute;
-  width: auto;
-  aspect-ratio: auto;
   cursor: grab;
 }
 
-#stage.previewing #dancer:active { cursor: grabbing; }
+#dancer:active { cursor: grabbing; }
 
-/* over a real page the checkerboard would hide it; the page is the backdrop */
-#stage.previewing #dancer[background="false"] { background: none; }
+#restore { flex: none; }
 
-/* the page behind must not swallow the pointer mid-drag */
-#stage.dragging #site { pointer-events: none; }
-
-/* checkerboard so a transparent dancer reads as transparent */
-#dancer[background="false"] {
+/* checkerboard, so the dancer's transparency is obvious */
+#stage {
   background: repeating-conic-gradient(var(--field) 0 25%, var(--bg) 0 50%) 0 0 / 24px 24px;
 }
 
