@@ -74,8 +74,14 @@
 
     <section>
       <h2>Embed</h2>
-      <textarea id="embed-code" rows="5" readonly aria-label="Embed code"></textarea>
-      <button type="button" id="copy-embed">Copy embed code</button>
+      <label class="field"><span class="head">Script <span class="hint">once per page</span></span>
+        <textarea id="embed-script" rows="3" readonly spellcheck="false"></textarea>
+      </label>
+      <button type="button" id="copy-script" class="secondary">Copy script</button>
+      <label class="field"><span class="head">Tag <span class="hint">paste one to load it</span></span>
+        <textarea id="embed-tag" rows="5" spellcheck="false"></textarea>
+      </label>
+      <button type="button" id="copy-tag">Copy tag</button>
       <button type="button" id="hide" class="secondary">Hide the dancer</button>
     </section>
   </form>

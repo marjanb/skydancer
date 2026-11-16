@@ -160,6 +160,8 @@ select {
   cursor: pointer;
 }
 
+.hint { font-weight: 500; color: var(--muted); }
+
 .note { margin: -4px 0 0; color: var(--muted); font-size: 12px; }
 
 #controls input[type="text"]:not(.hex) {

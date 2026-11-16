@@ -44,11 +44,17 @@ function writeInput(el, value) {
 
 // @1 follows the newest v1.x.x tag; jsDelivr generates the .min.js on the fly
 const CDN_URL = 'https://cdn.jsdelivr.net/gh/marjanb/skydancer@1/skydancer.min.js';
-const embedCode = document.getElementById('embed-code');
+const embedScript = document.getElementById('embed-script');
+const embedTag = document.getElementById('embed-tag');
+
+// a throwaway element reports the widget's own defaults, for attributes a
+// pasted tag leaves out
+const DEFAULTS = document.createElement('sky-dancer').cfg;
 
 const escapeHtml = s => s.replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
 const escapeAttr = s => escapeHtml(String(s)).replace(/"/g, '&quot;');
-const copyButton = document.getElementById('copy-embed');
+const copyScript = document.getElementById('copy-script');
+const copyTag = document.getElementById('copy-tag');
 
 // readout next to each slider
 const pct = v => `${Math.round(v * 100)}%`;
@@ -71,31 +77,65 @@ function apply(el) {
     .filter(input => !(input.dataset.key === 'sign' && !input.value.trim()))
     .filter(input => !(input.dataset.key === 'closable' && input.checked))
     .map(input => `${input.dataset.key}="${escapeAttr(readInput(input))}"`).join(' ');
-  embedCode.value = `<script src="${CDN_URL}"></script>\n<sky-dancer ${attrs} style="height: 500px"></sky-dancer>`;
+  embedScript.value = `<script src="${CDN_URL}"></script>`;
+  // don't rewrite the box someone is typing or pasting into
+  if (document.activeElement !== embedTag) {
+    embedTag.value = `<sky-dancer ${attrs} style="height: 500px"></sky-dancer>`;
+  }
 }
 
-copyButton.addEventListener('click', async () => {
-  try {
-    await navigator.clipboard.writeText(embedCode.value);
-    copyButton.textContent = 'Copied!';
-  } catch {
-    // clipboard can be blocked (e.g. some file:// setups); leave it selected for Ctrl/Cmd+C
-    embedCode.select();
-    copyButton.textContent = 'Press Ctrl/Cmd+C to copy';
-  }
-  setTimeout(() => { copyButton.textContent = 'Copy embed code'; }, 1500);
-});
+function wireCopy(button, field, label) {
+  button.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(field.value);
+      button.textContent = 'Copied!';
+    } catch {
+      // clipboard can be blocked (e.g. some file:// setups); leave it selected for Ctrl/Cmd+C
+      field.select();
+      button.textContent = 'Press Ctrl/Cmd+C to copy';
+    }
+    setTimeout(() => { button.textContent = label; }, 1500);
+  });
+}
+
+wireCopy(copyScript, embedScript, 'Copy script');
+wireCopy(copyTag, embedTag, 'Copy tag');
 
 // data-key is the attribute name ("arm-length"); the widget's cfg is camelCase
 const cfgKey = key => key.replace(/-(\w)/g, (_, c) => c.toUpperCase());
+const OFF = ['false', '0', 'no', 'off'];  // the same values the widget treats as off
 
 for (const el of inputs) {
   const key = el.dataset.key;
-  writeInput(el, key in saved ? saved[key] : dancer.cfg[cfgKey(key)]);
+  writeInput(el, key in saved ? saved[key] : DEFAULTS[cfgKey(key)]);
   // the input clamps stale saved values, so apply what it shows, not what was saved
   apply(el);
   el.addEventListener('input', () => { apply(el); save(); });
 }
+
+// a value the control can't hold would land on a clamped slider or an empty
+// select, so fall back the way the widget itself does
+function usable(el, value) {
+  if (value === null) return false;
+  if (el.type === 'range') return value.trim() !== '' && Number.isFinite(Number(value));
+  if (el.tagName === 'SELECT') return [...el.options].some(o => o.value === value);
+  return true;
+}
+
+// pasting a tag back loads the settings it carries; anything it leaves out
+// goes back to the widget's default, so a paste lands somewhere predictable
+embedTag.addEventListener('input', () => {
+  const tag = new DOMParser().parseFromString(embedTag.value, 'text/html').querySelector('sky-dancer');
+  if (!tag) return;  // still typing, or not a tag at all
+  for (const el of inputs) {
+    const value = tag.getAttribute(el.dataset.key);
+    const fallback = DEFAULTS[cfgKey(el.dataset.key)];
+    if (el.type === 'checkbox') el.checked = value === null ? fallback : !OFF.includes(value.trim().toLowerCase());
+    else el.value = usable(el, value) ? value : fallback;
+    apply(el);
+  }
+  save();
+});
 
 // typing a hex drives the colour picker next to it; #abc and a missing # are fine
 const HEX = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
