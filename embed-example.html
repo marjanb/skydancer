@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Skydancer embed example</title>
+  <style>
+    body { max-width: 720px; margin: 40px auto; padding: 0 16px; font: 16px/1.5 system-ui, sans-serif; }
+    .pair { display: flex; gap: 16px; }
+    .pair sky-dancer { flex: 1; min-width: 0; height: 300px; }
+  </style>
+</head>
+<body>
+  <h1>Grand opening sale!</h1>
+  <p>A default skydancer, dropped into an ordinary page:</p>
+  <sky-dancer></sky-dancer>
+
+  <p>Two customised ones side by side:</p>
+  <div class="pair">
+    <sky-dancer color="#7d3cff" accent="#00e0c6" face="cool" girth="50"></sky-dancer>
+    <sky-dancer color="#ff8a00" accent="#ff2d78" face="surprised" hair="false" wind="0"></sky-dancer>
+  </div>
+
+  <script src="skydancer.js"></script>
+</body>
+</html>

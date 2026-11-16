@@ -1,0 +1,61 @@
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  display: flex;
+  font: 14px/1.4 system-ui, sans-serif;
+  color: #1a1a2e;
+}
+
+#dancer {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: auto;  /* fill the page instead of the widget's default 400px */
+}
+
+#controls {
+  width: 250px;
+  padding: 16px;
+  overflow-y: auto;
+  background: #fff;
+  border-left: 1px solid #d8dde6;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#controls h1 { margin: 0; font-size: 18px; }
+
+#controls label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
+#controls label.row { flex-direction: row; align-items: center; gap: 8px; }
+
+#controls input[type="range"],
+#controls input[type="color"],
+#controls select { width: 100%; }
+
+#controls input[type="color"] { height: 32px; padding: 2px; }
+
+#controls textarea {
+  width: 100%;
+  resize: vertical;
+  font: 12px/1.4 ui-monospace, monospace;
+  font-weight: normal;
+}
+
+#controls button {
+  padding: 10px;
+  font: inherit;
+  font-weight: 600;
+  color: #fff;
+  background: #1a1a2e;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  body { flex-direction: column; }
+  #controls { width: 100%; max-height: 45%; border-left: 0; border-top: 1px solid #d8dde6; }
+}
