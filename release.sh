@@ -8,6 +8,8 @@
 set -euo pipefail
 
 REPO=marjanbajct2/skydancer
+# .min.js is not in the repo: jsDelivr minifies the source on request, and
+# caches that result separately, so it needs purging too.
 FILES=(skydancer.js skydancer.min.js)
 
 tag=${1:-}
@@ -28,9 +30,12 @@ if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
   exit 1
 fi
 
+# drop the local tag again if either push fails, so a rerun isn't blocked by it
+trap 'git tag -d "$tag" >/dev/null 2>&1 || true' ERR
 git tag "$tag"
 git push origin HEAD
 git push origin "$tag"
+trap - ERR
 
 for f in "${FILES[@]}"; do
   echo "purging $f"
@@ -40,7 +45,8 @@ done
 # the alias takes a moment to pick the new tag up
 served=""
 for _ in $(seq 1 20); do
-  served=$(curl -fsS "https://cdn.jsdelivr.net/gh/$REPO@1/skydancer.min.js" | sed -n 's/.*Original file: [^@]*@\([^/]*\).*/\1/p' | head -1)
+  # a blip here should cost one attempt, not the whole run
+  served=$(curl -fsS "https://cdn.jsdelivr.net/gh/$REPO@1/skydancer.min.js" | sed -n 's/.*Original file: [^@]*@\([^/]*\).*/\1/p' | head -1) || true
   [[ $served == "${tag#v}" ]] && break
   sleep 5
 done

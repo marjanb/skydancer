@@ -22,7 +22,7 @@
     hair: true,
     background: true, // false = transparent, no sky or ground
     night: false,     // dark sky, dancer lit by a spotlight
-    count: 1,         // how many dancers share the ground
+    count: 1,         // how many dancers stand together
   };
 
   const OFF = ['false', '0', 'no', 'off'];
