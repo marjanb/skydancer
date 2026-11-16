@@ -34,6 +34,7 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `glow`       | `1`       | how strong that spotlight is; `0` for none |
 | `count`      | `1`       | how many dancers stand together (max 6)    |
 | `sign`       | none      | words in a speech bubble by the dancer     |
+| `bubble`     | `drawn`   | bubble shape: `drawn`, `box` or `burst`    |
 | `closable`   | `true`    | `false` drops the balloon's dismiss button |
 
 The `sign` attribute puts words in a hand-drawn speech balloon beside the dancer's head. It drifts rather than tracking the head, so the words stay readable.
