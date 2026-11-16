@@ -181,7 +181,17 @@
 
     // poking it knocks the air out: a kink now, and extra flailing that fades
     let punch = 0;
-    canvas.addEventListener('pointerdown', () => {
+    let closeAt = null;  // the balloon's close button, in drawing units
+
+    canvas.addEventListener('pointerdown', e => {
+      const scale = canvas.clientHeight / REF_HEIGHT;
+      if (closeAt && scale) {
+        const dx = e.offsetX / scale - closeAt.x, dy = e.offsetY / scale - closeAt.y;
+        if (dx * dx + dy * dy <= closeAt.r * closeAt.r) {
+          canvas.getRootNode().host.style.display = 'none';  // the loop stops with it
+          return;
+        }
+      }
       if (reduced.matches) return;  // nothing would decay the punch without a loop
       punch = 1;
       kink = { start: t, dur: 0.9, dir: Math.random() < 0.5 ? -1 : 1, mag: 0.45 };
@@ -407,7 +417,7 @@
       const originX = side > 0
         ? Math.max(0, Math.min(W - bw, tipX))
         : Math.max(bw, Math.min(W, tipX));
-      const originY = Math.max(0, at.y - bh);
+      const originY = Math.max(H * 0.012, at.y - bh);  // never flush with the top edge
 
       ctx.save();
       ctx.translate(originX, originY);
@@ -424,6 +434,28 @@
       ctx.textBaseline = 'middle';
       const tx = originX + side * BALLOON.cx * scale, ty = originY + BALLOON.cy * scale;
       lines.forEach((line, i) => ctx.fillText(line, tx, ty + (i - (lines.length - 1) / 2) * step));
+
+      // a dismiss button on the rim, always at the visual top right
+      const rim = side > 0 ? 123 : 39;
+      const cx = originX + side * rim * scale, cy = originY + 14 * scale;
+      const r = 13 * scale;
+      closeAt = { x: cx, y: cy, r: r * 1.4 };  // a little slack for fingers
+
+      ctx.lineWidth = Math.max(1.5, 3 * scale);
+      ctx.strokeStyle = OUTLINE;
+      ctx.fillStyle = '#fffdf6';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      const arm = r * 0.42;
+      ctx.beginPath();
+      ctx.moveTo(cx - arm, cy - arm);
+      ctx.lineTo(cx + arm, cy + arm);
+      ctx.moveTo(cx + arm, cy - arm);
+      ctx.lineTo(cx - arm, cy + arm);
+      ctx.stroke();
     }
 
     function draw(dancers) {
@@ -444,16 +476,20 @@
       }
 
       const sign = String(cfg.sign ?? '').trim();
-      // the biggest dancer is the one in front, so it does the talking
-      const speaker = dancers[dancers.length - 1];
-      if (sign && speaker) {
-        const head = speaker.body[Math.round(BODY_SEGS * 0.9)];
-        if (!drift) drift = { x: head.x, y: head.y };
+      closeAt = null;
+      if (sign && dancers.length) {
+        // one balloon for the lot of them, floating over the middle of the group
+        const heads = dancers.map(d => d.body[Math.round(BODY_SEGS * 0.9)]);
+        const mid = {
+          x: heads.reduce((sum, h) => sum + h.x, 0) / heads.length,
+          y: heads.reduce((sum, h) => sum + h.y, 0) / heads.length,
+        };
+        if (!drift) drift = { x: mid.x, y: mid.y };
         // ~1.5s to catch up: a drift, not a chase. A still pose has no loop to ease with.
         const ease = reduced.matches ? 1 : Math.max(0, Math.min(1, frameDt * 0.7));
-        drift.x += (head.x - drift.x) * ease;
-        drift.y += (head.y - drift.y) * ease;
-        drawBubble(drift, head, speaker.girth, sign);
+        drift.x += (mid.x - drift.x) * ease;
+        drift.y += (mid.y - drift.y) * ease;
+        drawBubble(drift, mid, Math.max(...dancers.map(d => d.girth)), sign);
       }
     }
 
