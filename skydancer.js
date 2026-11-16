@@ -4,7 +4,7 @@
 //   <sky-dancer color="#ff3b30" accent="#ffd60a" face="cool" style="height: 500px"></sky-dancer>
 //
 // Every attribute is optional (defaults below). The widget crops to the dancer:
-// 400px tall and 1.4x as wide, unless the page styles it otherwise.
+// 400px tall and 1.5x as wide per dancer, unless the page styles it otherwise.
 
 (() => {
   if (customElements.get('sky-dancer')) return;  // script included twice
@@ -21,14 +21,18 @@
     face: 'happy',    // happy | surprised | cool
     hair: true,
     background: true, // false = transparent, no sky or ground
+    night: false,     // dark sky, dancer lit by a spotlight
+    count: 1,         // how many dancers share the ground
   };
+
+  const OFF = ['false', '0', 'no', 'off'];
 
   const attrName = key => key.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`);
   const KEYS = Object.keys(DEFAULTS);
 
   function parse(key, value) {
     if (value === null) return DEFAULTS[key];
-    if (typeof DEFAULTS[key] === 'boolean') return value !== 'false';
+    if (typeof DEFAULTS[key] === 'boolean') return !OFF.includes(value.trim().toLowerCase());
     if (typeof DEFAULTS[key] === 'number') {
       // Number, not parseFloat: height="500px" should fall back, not mean 500x the canvas
       const n = value.trim() === '' ? NaN : Number(value);
@@ -46,7 +50,10 @@
   const GROUND = 48;      // matches the ground strip in STYLE; without a background the fan sits at the bottom edge
   // Width per unit of height: the dancer's own span, measured at the wildest
   // wind, so the embed is a box around it rather than the whole page width.
-  const CROP_RATIO = 1.4;
+  const CROP_RATIO = 1.5;
+  const MAX_COUNT = 6;
+  // a crowd looks like a crowd when they aren't all the same size
+  const SIZES = [1, 0.84, 0.94, 0.8, 0.9, 0.87];
   const OUTLINE = '#1a1a2e';
 
   const STYLE = `
@@ -55,7 +62,7 @@
       display: inline-block;
       vertical-align: middle;
       height: 400px;
-      aspect-ratio: ${CROP_RATIO};
+      aspect-ratio: calc(${CROP_RATIO} * var(--count, 1));
     }
     canvas {
       display: block;
@@ -64,7 +71,11 @@
       /* sky, then a hard stop into the ground strip the fan sits on */
       background: linear-gradient(#3d9bff, #c9e8ff ${100 - GROUND / REF_HEIGHT * 100}%, #58b368 ${100 - GROUND / REF_HEIGHT * 100}%, #3f8f50);
     }
-    :host([background="false"]) canvas { background: none; }
+    canvas.night {
+      background: linear-gradient(#070b1c, #1b2748 ${100 - GROUND / REF_HEIGHT * 100}%, #16301f ${100 - GROUND / REF_HEIGHT * 100}%, #0c1c12);
+    }
+    /* last, so transparent wins over night */
+    canvas.bare { background: none; }
   `;
 
   // Runs one dancer on a canvas, reading the live cfg object every frame.
@@ -72,6 +83,8 @@
   function animate(canvas, cfg) {
     const ctx = canvas.getContext('2d');
     const events = new AbortController();
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+    let ready = false, visible = false, lastDpr = 0;
 
     // ---- canvas sizing ----
 
@@ -83,9 +96,12 @@
       if (!scale) return;  // not laid out yet
       W = canvas.clientWidth / scale;
       H = REF_HEIGHT;
+      lastDpr = dpr;
       canvas.width = canvas.clientWidth * dpr;
       canvas.height = canvas.clientHeight * dpr;
       ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+      // a still pose has no loop to redraw it after a resize
+      if (ready && visible && reduced.matches) render();
     }
 
     const observer = new ResizeObserver(resize);
@@ -96,6 +112,8 @@
     // Everything is a chain of segments. Each segment adds a small bend to the
     // running angle (0 = straight up, positive = leaning right), so travelling
     // sine waves in the bend read as air rippling up the tube.
+
+    const count = () => Math.max(1, Math.min(MAX_COUNT, Math.round(cfg.count) || 1));
 
     // height of the strip below the fan's base line: the ground, or just enough to show the whole fan
     const ground = () => cfg.background ? GROUND : Math.ceil(cfg.girth * 0.25);
@@ -135,6 +153,14 @@
     }, { signal: events.signal });
     canvas.addEventListener('pointerleave', () => { pointerWind = 0; }, { signal: events.signal });
 
+    // poking it knocks the air out: a kink now, and extra flailing that fades
+    let punch = 0;
+    canvas.addEventListener('pointerdown', () => {
+      if (reduced.matches) return;  // nothing would decay the punch without a loop
+      punch = 1;
+      kink = { start: t, dur: 0.9, dir: Math.random() < 0.5 ? -1 : 1, mag: 0.45 };
+    }, { signal: events.signal });
+
     function updateWind(t, dt) {
       if (t > gust.start + gust.dur) {
         gust = {
@@ -164,12 +190,21 @@
         };
       }
 
-      const w = cfg.wildness;
+      const n = count();
+      // smallest first, so they read as standing further back
+      return Array.from({ length: n }, (_, i) => dancerAt(t + i * 3.7, W * (i + 0.5) / n, SIZES[i % SIZES.length]))
+        .sort((a, b) => a.girth - b.girth);
+    }
+
+    // one dancer, `k` times the configured size, standing at x
+    function dancerAt(t, x, k) {
+      const w = cfg.wildness * (1 + punch * 2.5);
+      const girth = cfg.girth * k;
       // cap so tall settings in short widgets don't poke out of the top
-      const height = Math.min(H * cfg.height, H - ground() - cfg.girth);
+      const height = Math.min(H * cfg.height, H - ground() - cfg.girth) * k;
 
       // start half a girth up so the round end cap stays hidden behind the fan
-      const body = chain(W / 2, H - ground() - cfg.girth / 2, 0, BODY_SEGS, height / BODY_SEGS, u =>
+      const body = chain(x, H - ground() - girth / 2, 0, BODY_SEGS, height / BODY_SEGS, u =>
         w * (0.05 * Math.sin(t * 2.1 - u * 5) + 0.035 * Math.sin(t * 3.7 - u * 9 + 1.3)) * (0.3 + u) + kinkBend(u, t) + wind * 0.03);
 
       const shoulder = body[Math.round(BODY_SEGS * 0.66)];
@@ -180,11 +215,11 @@
             w * (0.12 * Math.sin(t * 4.3 - v * 6 + side * 2) + 0.08 * Math.sin(t * 6.1 - v * 10)) * (0.4 + v) + 0.12 * blow(a)));
 
       const top = body[BODY_SEGS];
-      const hair = !cfg.hair ? [] : [-2, -1, 0, 1, 2].map(k =>
-        chain(top.x, top.y, top.a + k * 0.3, HAIR_SEGS, cfg.girth * 0.14, (v, a) =>
-          w * 0.25 * Math.sin(t * 9 - v * 4 + k * 1.7) + 0.5 * blow(a)));
+      const hair = !cfg.hair ? [] : [-2, -1, 0, 1, 2].map(j =>
+        chain(top.x, top.y, top.a + j * 0.3, HAIR_SEGS, girth * 0.14, (v, a) =>
+          w * 0.25 * Math.sin(t * 9 - v * 4 + j * 1.7) + 0.5 * blow(a)));
 
-      return { body, arms, hair };
+      return { body, arms, hair, girth, x, t };
     }
 
     // ---- drawing ----
@@ -249,60 +284,100 @@
       ctx.restore();
     }
 
-    function drawFan(g) {
+    function drawFan(x, g) {
       const w = g * 1.7, h = g * 0.55;
       ctx.fillStyle = '#3a3f4b';
       ctx.strokeStyle = OUTLINE;
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.roundRect(W / 2 - w / 2, H - ground() - h * 0.6, w, h, 8);
+      ctx.roundRect(x - w / 2, H - ground() - h * 0.6, w, h, 8);
       ctx.fill();
       ctx.stroke();
     }
 
-    function draw({ body, arms, hair }, t) {
-      const g = cfg.girth;
+    function drawGlow(x, g) {
+      const base = H - ground(), r = H * 0.75;
+      const glow = ctx.createRadialGradient(x, base, g * 0.5, x, base, r);
+      glow.addColorStop(0, 'rgba(255,236,170,.30)');
+      glow.addColorStop(1, 'rgba(255,236,170,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(x - r, base - r, r * 2, r * 2);
+    }
+
+    // the sky lives in CSS but the truth is in cfg, so mirror it onto the canvas
+    function syncLook() {
+      canvas.classList.toggle('night', !!cfg.night);
+      canvas.classList.toggle('bare', !cfg.background);
+    }
+
+    function draw(dancers) {
+      syncLook();
       ctx.clearRect(0, 0, W, H);
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      for (const strand of hair) strokeChain(strand, g * 0.1 + 4, OUTLINE);
-      for (const strand of hair) strokeChain(strand, g * 0.1, cfg.accent);
-      for (const arm of arms) drawTube(arm, g * 0.38, cfg.accent);
-      drawTube(body, g, cfg.color);
-      drawFace(body[Math.round(BODY_SEGS * 0.87)], g, t);
-      drawFan(g);
+      if (cfg.night) for (const d of dancers) drawGlow(d.x, d.girth);
+
+      for (const { body, arms, hair, girth, x, t } of dancers) {
+        for (const strand of hair) strokeChain(strand, girth * 0.1 + 4, OUTLINE);
+        for (const strand of hair) strokeChain(strand, girth * 0.1, cfg.accent);
+        for (const arm of arms) drawTube(arm, girth * 0.38, cfg.accent);
+        drawTube(body, girth, cfg.color);
+        drawFace(body[Math.round(BODY_SEGS * 0.87)], girth, t);
+        drawFan(x, girth);
+      }
     }
 
     // ---- loop ----
 
     let t = 0, last = performance.now(), raf;
 
+    function render() { draw(simulate(t)); }
+
     function frame(now) {
       // clamp dt so a backgrounded tab doesn't jump the animation on return
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
-      t += dt * cfg.speed;
+      t += dt * Math.max(0, cfg.speed);  // a negative speed would stall the scheduling
+      punch = Math.max(0, punch - dt * 0.7);
+      // ResizeObserver misses a move to a screen with a different pixel density
+      if ((window.devicePixelRatio || 1) !== lastDpr) resize();
       updateWind(t, dt);
-      draw(simulate(t), t);
+      render();
+      raf = requestAnimationFrame(frame);
+    }
+
+    function start() {
+      cancelAnimationFrame(raf);
+      if (!visible) return;
+      if (reduced.matches) {
+        punch = 0;  // nothing will decay it while the pose is held
+        return render();
+      }
+      last = performance.now();
       raf = requestAnimationFrame(frame);
     }
 
     // only animate while on screen, so an embed scrolled out of view costs nothing
     const visibility = new IntersectionObserver(([entry]) => {
-      cancelAnimationFrame(raf);
-      if (entry.isIntersecting) {
-        last = performance.now();
-        raf = requestAnimationFrame(frame);
-      }
+      visible = entry.isIntersecting;
+      start();
     });
+    syncLook();  // before the first frame, so the right sky is up from the start
     visibility.observe(canvas);
+    reduced.addEventListener('change', start, { signal: events.signal });
+    ready = true;
 
-    return () => {
-      cancelAnimationFrame(raf);
-      observer.disconnect();
-      visibility.disconnect();
-      events.abort();
+    return {
+      // only the still pose needs poking; the loop picks changes up on its own
+      redraw() { if (ready && visible && reduced.matches) render(); },
+      stop() {
+        visible = false;  // a late redraw() must not paint a detached canvas
+        cancelAnimationFrame(raf);
+        observer.disconnect();
+        visibility.disconnect();
+        events.abort();
+      },
     };
   }
 
@@ -320,14 +395,22 @@
     attributeChangedCallback(name, _old, value) {
       const key = KEYS.find(k => attrName(k) === name);
       this.cfg[key] = parse(key, value);
+      if (key === 'count' && this.isConnected) this.syncCount();
+      this.anim?.redraw();
+    }
+
+    // the host grows sideways with the crowd; a constructor may not touch attributes
+    syncCount() {
+      this.style.setProperty('--count', Math.max(1, Math.min(MAX_COUNT, Math.round(this.cfg.count) || 1)));
     }
 
     connectedCallback() {
-      this.stop = animate(this.canvas, this.cfg);
+      this.syncCount();
+      this.anim = animate(this.canvas, this.cfg);
     }
 
     disconnectedCallback() {
-      this.stop();
+      this.anim.stop();
     }
   }
 

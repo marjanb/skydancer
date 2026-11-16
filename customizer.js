@@ -35,7 +35,7 @@ const copyButton = document.getElementById('copy-embed');
 
 // readout next to each slider
 const pct = v => `${Math.round(v * 100)}%`;
-const FORMATS = { height: pct, 'arm-length': pct, girth: String };  // girth is relative now, not px
+const FORMATS = { height: pct, 'arm-length': pct, girth: String, count: String };
 
 function apply(el) {
   dancer.setAttribute(el.dataset.key, String(readInput(el)));
@@ -46,7 +46,10 @@ function apply(el) {
   if (hexField && document.activeElement !== hexField) hexField.value = el.value.toUpperCase();
   if (el.type === 'range') el.style.setProperty('--fill', `${(el.value - el.min) / (el.max - el.min) * 100}%`);
   const attrs = inputs
-    .filter(input => !(input.dataset.key === 'background' && input.checked))  // sky is the widget default
+    // leave out anything already at the widget's own default
+    .filter(input => !(input.dataset.key === 'background' && input.checked))
+    .filter(input => !(input.dataset.key === 'night' && !input.checked))
+    .filter(input => !(input.dataset.key === 'count' && +input.value === 1))
     .map(input => `${input.dataset.key}="${readInput(input)}"`).join(' ');
   embedCode.value = `<script src="${CDN_URL}"></script>\n<sky-dancer ${attrs} style="height: 500px"></sky-dancer>`;
 }
