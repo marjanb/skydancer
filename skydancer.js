@@ -23,18 +23,24 @@
     background: true, // false = transparent, no sky or ground
     night: false,     // dark sky, dancer lit by a spotlight
     nightColor: '#1b2748',  // the night sky at the horizon; the rest is shaded from it
+    glowColor: '#ffecaa',   // the spotlight the dancer stands in at night
     count: 1,         // how many dancers stand together
   };
 
   const OFF = ['false', '0', 'no', 'off'];
 
-  // one hex colour, dimmed by `f`, for shading the night sky out of a single value
-  function shade(hex, f) {
+  function toRgb(hex) {
     const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex).trim());
     if (!m) return null;
     const d = m[1].length === 3 ? [...m[1]].map(c => c + c).join('') : m[1];
     const n = parseInt(d, 16);
-    return `rgb(${[n >> 16 & 255, n >> 8 & 255, n & 255].map(v => Math.round(v * f)).join(',')})`;
+    return [n >> 16 & 255, n >> 8 & 255, n & 255];
+  }
+
+  // one hex colour, dimmed by `f`, for shading the night sky out of a single value
+  function shade(hex, f) {
+    const c = toRgb(hex);
+    return c && `rgb(${c.map(v => Math.round(v * f)).join(',')})`;
   }
 
   const attrName = key => key.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`);
@@ -312,9 +318,10 @@
 
     function drawGlow(x, g) {
       const base = H - ground(), r = H * 0.75;
+      const lit = (toRgb(cfg.glowColor) || toRgb(DEFAULTS.glowColor)).join(',');
       const glow = ctx.createRadialGradient(x, base, g * 0.5, x, base, r);
-      glow.addColorStop(0, 'rgba(255,236,170,.30)');
-      glow.addColorStop(1, 'rgba(255,236,170,0)');
+      glow.addColorStop(0, `rgba(${lit},.30)`);
+      glow.addColorStop(1, `rgba(${lit},0)`);
       ctx.fillStyle = glow;
       ctx.fillRect(x - r, base - r, r * 2, r * 2);
     }

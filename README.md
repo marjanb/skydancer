@@ -30,6 +30,7 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `background` | `true`    | `false` drops the sky and ground (transparent) |
 | `night`      | `false`   | `true` for a dark sky and a spotlit dancer |
 | `night-color`| `#1b2748` | the night sky's colour; the rest is shaded from it |
+| `glow-color` | `#ffecaa` | the spotlight the dancer stands in at night |
 | `count`      | `1`       | how many dancers stand together (max 6)    |
 
 Poking a dancer knocks the air out of it. Where the viewer's system asks for reduced motion, it holds a still pose instead of animating.
