@@ -32,7 +32,7 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `night-color`| `#1b2748` | the night sky's colour; the rest is shaded from it |
 | `glow-color` | `#ffecaa` | the spotlight the dancer stands in at night |
 | `count`      | `1`       | how many dancers stand together (max 6)    |
-| `sign`       | none      | words on a board at their feet             |
+| `sign`       | none      | words in a speech bubble by the dancer     |
 
 Anything you put inside the tag shows as a caption, held still over the sky so it stays readable while the dancer moves:
 
@@ -40,7 +40,7 @@ Anything you put inside the tag shows as a caption, held still over the sky so i
 <sky-dancer style="height: 400px"><b>Grand opening!</b></sky-dancer>
 ```
 
-It is ordinary HTML, so the page can style it. The `sign` attribute instead paints the words on a board at the dancer's feet.
+It is ordinary HTML, so the page can style it. The `sign` attribute instead puts the words in a comic speech bubble beside the dancer, which drifts with the body but stays upright.
 
 Poking a dancer knocks the air out of it. Where the viewer's system asks for reduced motion, it holds a still pose instead of animating.
 

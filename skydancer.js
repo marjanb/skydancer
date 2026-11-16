@@ -25,7 +25,7 @@
     nightColor: '#1b2748',  // the night sky at the horizon; the rest is shaded from it
     glowColor: '#ffecaa',   // the spotlight the dancer stands in at night
     count: 1,         // how many dancers stand together
-    sign: '',         // words on a board at their feet; empty for none
+    sign: '',         // words in a speech bubble by the dancer; empty for none
   };
 
   const OFF = ['false', '0', 'no', 'off'];
@@ -362,31 +362,84 @@
       }
     }
 
-    function drawSign(text) {
-      const w = Math.min(W * 0.82, H * 1.05), h = H * 0.17;
-      const lw = Math.max(3, H * 0.006);
-      const x = W / 2;
-      // without a background the ground line sits lower, so keep the board on canvas
-      const top = Math.min(H - ground() - h * 0.78, H - h - lw);
+    // A comic speech balloon that floats beside the head. It eases toward the
+    // head rather than tracking it, so the words drift instead of thrashing;
+    // only the tail keeps up with where the dancer actually is.
+    let drift = null;
 
+    function drawBubble(at, speakFrom, girth, text) {
+      const pad = H * 0.022;
+      let size = H * 0.055;
+      const fit = () => { ctx.font = `700 ${size}px system-ui, -apple-system, sans-serif`; };
+      fit();
+
+      // wrap, so a long message stays a balloon instead of a flat ribbon
+      const words = text.split(/\s+/).filter(Boolean);
+      const wrap = max => {
+        const lines = [];
+        let line = '';
+        for (const word of words) {
+          const next = line ? `${line} ${word}` : word;
+          if (line && ctx.measureText(next).width > max) { lines.push(line); line = word; }
+          else line = next;
+        }
+        if (line) lines.push(line);
+        return lines;
+      };
+
+      const room = W * 0.26;
+      let lines = wrap(room);
+      let widest = Math.max(...lines.map(l => ctx.measureText(l).width));
+      if (lines.length > 3 || widest > room) {  // a lot of words, or one enormous one
+        size *= Math.min(3 / lines.length, room / widest);
+        fit();
+        lines = wrap(room);
+        widest = Math.max(...lines.map(l => ctx.measureText(l).width));
+      }
+
+      const step = size * 1.2;
+
+      // an oval needs about sqrt(2) times the half-size of the text block it holds
+      const rx = Math.min(widest, W * 0.42) * 0.72 + pad;
+      const ry = lines.length * step * 0.72 + pad * 0.5;
+
+      // sit to the right unless that would run off the canvas, then keep it on
+      const side = at.x + girth * 0.5 + rx * 2 + pad * 2 < W ? 1 : -1;
+      const cx = Math.max(rx, Math.min(W - rx, at.x + side * (girth * 0.5 + pad + rx)));
+      const cy = Math.min(H - ground() - ry, Math.max(ry + pad, at.y));
+
+      const lw = Math.max(2.5, H * 0.005);
       ctx.lineWidth = lw;
       ctx.strokeStyle = OUTLINE;
-      ctx.fillStyle = '#fff8e7';
+      ctx.fillStyle = '#fffdf6';
+
+      // tail: leaves the balloon facing the dancer and curves to a point at it.
+      // Drawn first so the balloon covers where it joins.
+      const aim = { x: speakFrom.x + side * girth * 0.45, y: speakFrom.y };
+      const towards = Math.atan2(aim.y - cy, aim.x - cx);
+      // a stubby tail that points at the dancer, rather than a thread stretched to it
+      const reach = Math.min(Math.hypot(aim.x - cx, aim.y - cy), rx + ry * 1.3);
+      const tip = { x: cx + Math.cos(towards) * reach, y: cy + Math.sin(towards) * reach };
+      const on = a => ({ x: cx + rx * Math.cos(a), y: cy + ry * Math.sin(a) });
+      const p1 = on(towards - 0.5), p2 = on(towards + 0.5);
+
       ctx.beginPath();
-      ctx.roundRect(x - w / 2, top, w, h, h * 0.14);
+      ctx.moveTo(p1.x, p1.y);
+      ctx.quadraticCurveTo((p1.x + tip.x) / 2, (p1.y + tip.y) / 2 - ry * 0.25, tip.x, tip.y);
+      ctx.quadraticCurveTo((p2.x + tip.x) / 2, (p2.y + tip.y) / 2 + ry * 0.25, p2.x, p2.y);
+      ctx.closePath();
       ctx.fill();
       ctx.stroke();
 
-      // shrink to fit rather than spill over the edges
-      const fit = h * 0.52;
-      ctx.font = `800 ${fit}px system-ui, -apple-system, sans-serif`;
-      const room = w * 0.86;
-      const size = Math.min(fit, fit * room / Math.max(1, ctx.measureText(text).width));
-      ctx.font = `800 ${size}px system-ui, -apple-system, sans-serif`;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
       ctx.fillStyle = OUTLINE;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(text, x, top + h / 2);
+      lines.forEach((line, i) => ctx.fillText(line, cx, cy + (i - (lines.length - 1) / 2) * step));
     }
 
     function draw(dancers) {
@@ -407,18 +460,29 @@
       }
 
       const sign = String(cfg.sign ?? '').trim();
-      if (sign) drawSign(sign);
+      // the biggest dancer is the one in front, so it does the talking
+      const speaker = dancers[dancers.length - 1];
+      if (sign && speaker) {
+        const head = speaker.body[Math.round(BODY_SEGS * 0.9)];
+        if (!drift) drift = { x: head.x, y: head.y };
+        // ~1.5s to catch up: a drift, not a chase. A still pose has no loop to ease with.
+        const ease = reduced.matches ? 1 : Math.max(0, Math.min(1, frameDt * 0.7));
+        drift.x += (head.x - drift.x) * ease;
+        drift.y += (head.y - drift.y) * ease;
+        drawBubble(drift, head, speaker.girth, sign);
+      }
     }
 
     // ---- loop ----
 
-    let t = 0, last = performance.now(), raf;
+    let t = 0, last = performance.now(), raf, frameDt = 0;
 
     function render() { draw(simulate(t)); }
 
     function frame(now) {
       // clamp dt so a backgrounded tab doesn't jump the animation on return
       const dt = Math.min((now - last) / 1000, 0.05);
+      frameDt = dt;
       last = now;
       t += dt * Math.max(0, cfg.speed);  // a negative speed would stall the scheduling
       punch = Math.max(0, punch - dt * 0.7);
