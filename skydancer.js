@@ -217,21 +217,21 @@
       wind += (target - wind) * Math.min(1, dt * 4);
     }
 
-    // Every so often the air gives out: the dancer folds to the ground, lies
-    // there a moment, then fills back up. `lift` is 1 standing, 0 flat.
-    let slump = { start: 9, dur: 3 };
+    // Every so often the air can't keep up and the dancer sags: it dips lower
+    // in the body for a moment, then fills again. `lift` is 1 at full height.
+    let sag = { start: 6, dur: 1.1, depth: 0.4 };
     let lift = 1;
 
     function updateLift(t) {
-      if (t > slump.start + slump.dur) {
-        slump = { start: t + 8 + Math.random() * 14, dur: 2.5 + Math.random() * 1.5 };
+      if (t > sag.start + sag.dur) {
+        sag = {
+          start: t + 5 + Math.random() * 9,
+          dur: 0.9 + Math.random() * 0.8,
+          depth: 0.25 + Math.random() * 0.3,
+        };
       }
-      const p = (t - slump.start) / slump.dur;
-      if (p < 0 || p > 1) { lift = 1; return; }
-      const ease = x => x * x * (3 - 2 * x);
-      lift = p < 0.22 ? 1 - ease(p / 0.22)       // the air goes out quickly
-        : p < 0.6 ? 0                             // and it lies there
-        : ease((p - 0.6) / 0.4);                  // before filling again
+      const p = (t - sag.start) / sag.dur;
+      lift = p < 0 || p > 1 ? 1 : 1 - sag.depth * Math.sin(Math.PI * p);  // down and straight back up
     }
 
     // bend that swings a loose chain (arm, hair) round to point downwind
@@ -259,14 +259,14 @@
 
     // one dancer, `k` times the configured size, standing at x
     function dancerAt(t, x, k) {
-      // limp fabric neither stands up, flails, nor kinks
-      const limp = 0.12 + 0.88 * lift;
+      // a sagging dancer loses some of its height and a little of its snap
+      const limp = 0.55 + 0.45 * lift;
       const w = cfg.wildness * (1 + punch * 2.5) * limp;
       const girth = cfg.girth * k;
       // cap so tall settings in short widgets don't poke out of the top
-      const height = Math.min(H * cfg.height, H - ground() - cfg.girth) * k * limp;
-      // folds the way the air was blowing, easing through a change of direction
-      const droop = (1 - lift) * 0.2 * Math.tanh(wind * 4);
+      const height = Math.min(H * cfg.height, H - ground() - cfg.girth) * k * lift;
+      // slouches the way the air was blowing, easing through a change of direction
+      const droop = (1 - lift) * 0.06 * Math.tanh(wind * 4);
 
       // start half a girth up so the round end cap stays hidden behind the fan
       const body = chain(x, H - ground() - girth / 2, 0, BODY_SEGS, height / BODY_SEGS, u =>
@@ -548,7 +548,7 @@
       if (!visible) return;
       if (reduced.matches) {
         punch = 0;  // nothing will decay it while the pose is held
-        updateLift(t);  // or the pose could be stuck mid-collapse
+        updateLift(t);  // or the pose could be stuck mid-sag
         return render();
       }
       last = performance.now();
