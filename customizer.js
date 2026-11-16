@@ -95,8 +95,8 @@ function writeInput(el, value) {
   else el.value = value;
 }
 
-// @1 follows the newest v1.x.x tag; jsDelivr generates the .min.js on the fly
-const CDN_URL = 'https://cdn.jsdelivr.net/gh/marjanb/skydancer@1/skydancer.min.js';
+// @2 follows the newest v2.x.x tag; jsDelivr generates the .min.js on the fly
+const CDN_URL = 'https://cdn.jsdelivr.net/gh/marjanb/skydancer@2/skydancer.min.js';
 const embedScript = document.getElementById('embed-script');
 const embedTag = document.getElementById('embed-tag');
 

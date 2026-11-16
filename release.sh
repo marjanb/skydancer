@@ -3,8 +3,8 @@
 #
 #   ./release.sh v1.6.0
 #
-# Without the purge, embeds on the floating @1 link keep the old file for
-# up to about a week.
+# Embeds use a floating major link (@1, @2, ...). Without the purge they keep
+# the old file for up to about a week.
 set -euo pipefail
 
 REPO=marjanb/skydancer
@@ -17,6 +17,8 @@ if [[ ! $tag =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo "usage: $0 vX.Y.Z" >&2
   exit 1
 fi
+major=${tag%%.*}          # v2.0.0 -> v2
+major=${major#v}          # -> 2
 
 cd "$(dirname "$0")"
 
@@ -39,20 +41,20 @@ trap - ERR
 
 for f in "${FILES[@]}"; do
   echo "purging $f"
-  curl -fsS "https://purge.jsdelivr.net/gh/$REPO@1/$f" >/dev/null
+  curl -fsS "https://purge.jsdelivr.net/gh/$REPO@$major/$f" >/dev/null
 done
 
 # the alias takes a moment to pick the new tag up
 served=""
 for _ in $(seq 1 20); do
   # a blip here should cost one attempt, not the whole run
-  served=$(curl -fsS "https://cdn.jsdelivr.net/gh/$REPO@1/skydancer.min.js" | sed -n 's/.*Original file: [^@]*@\([^/]*\).*/\1/p' | head -1) || true
+  served=$(curl -fsS "https://cdn.jsdelivr.net/gh/$REPO@$major/skydancer.min.js" | sed -n 's/.*Original file: [^@]*@\([^/]*\).*/\1/p' | head -1) || true
   [[ $served == "${tag#v}" ]] && break
   sleep 5
 done
 
 if [[ $served == "${tag#v}" ]]; then
-  echo "$tag is live on the CDN"
+  echo "$tag is live on the CDN (@$major)"
 else
   echo "warning: the CDN still serves ${served:-unknown}; try the purge again shortly" >&2
   exit 1
