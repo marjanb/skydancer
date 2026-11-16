@@ -24,6 +24,7 @@
     night: false,     // dark sky, dancer lit by a spotlight
     nightColor: '#1b2748',  // the night sky at the horizon; the rest is shaded from it
     glowColor: '#ffecaa',   // the spotlight the dancer stands in at night
+    glow: 1,                // how strong that spotlight is; 0 for none
     count: 1,         // how many dancers stand together
     sign: '',         // words in a speech bubble by the dancer; empty for none
     closable: true,   // a dismiss button on the balloon; false leaves it to the page
@@ -368,10 +369,12 @@
     }
 
     function drawGlow(x, g) {
+      const strength = Math.max(0, Math.min(2, cfg.glow));
+      if (!strength) return;
       const base = H - ground(), r = H * 0.75;
       const lit = (toRgb(cfg.glowColor) || toRgb(DEFAULTS.glowColor)).join(',');
       const glow = ctx.createRadialGradient(x, base, g * 0.5, x, base, r);
-      glow.addColorStop(0, `rgba(${lit},.30)`);
+      glow.addColorStop(0, `rgba(${lit},${0.3 * strength})`);
       glow.addColorStop(1, `rgba(${lit},0)`);
       ctx.fillStyle = glow;
       ctx.fillRect(x - r, base - r, r * 2, r * 2);

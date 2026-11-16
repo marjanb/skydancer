@@ -73,7 +73,7 @@ function apply(el) {
     .filter(input => !(input.dataset.key === 'background' && input.checked))
     .filter(input => !(input.dataset.key === 'night' && !input.checked))
     .filter(input => !(input.dataset.key === 'count' && +input.value === 1))
-    .filter(input => !(/^(night|glow)-color$/.test(input.dataset.key) && !document.querySelector('[data-key="night"]').checked))
+    .filter(input => !(/^(glow|(night|glow)-color)$/.test(input.dataset.key) && !document.querySelector('[data-key="night"]').checked))
     .filter(input => !(input.dataset.key === 'sign' && !input.value.trim()))
     .filter(input => !(input.dataset.key === 'closable' && input.checked))
     .map(input => `${input.dataset.key}="${escapeAttr(readInput(input))}"`).join(' ');

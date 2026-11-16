@@ -31,6 +31,7 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `night`      | `false`   | `true` for a dark sky and a spotlit dancer |
 | `night-color`| `#1b2748` | the night sky's colour; the rest is shaded from it |
 | `glow-color` | `#ffecaa` | the spotlight the dancer stands in at night |
+| `glow`       | `1`       | how strong that spotlight is; `0` for none |
 | `count`      | `1`       | how many dancers stand together (max 6)    |
 | `sign`       | none      | words in a speech bubble by the dancer     |
 | `closable`   | `true`    | `false` drops the balloon's dismiss button |
