@@ -20,6 +20,7 @@
     wind: 1,          // 0 = calm; scales pointer wind and gusts
     face: 'happy',    // happy | surprised | cool
     hair: true,
+    background: true, // false = transparent, no sky or ground
   };
 
   const attrName = key => key.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`);
@@ -39,7 +40,7 @@
   const BODY_SEGS = 28;
   const ARM_SEGS = 12;
   const HAIR_SEGS = 6;
-  const GROUND = 48;      // matches the ground strip in STYLE
+  const GROUND = 48;      // matches the ground strip in STYLE; without a background the fan sits at the bottom edge
   const OUTLINE = '#1a1a2e';
 
   const STYLE = `
@@ -51,6 +52,7 @@
       /* sky, then a hard stop into the ground strip the fan sits on */
       background: linear-gradient(#3d9bff, #c9e8ff calc(100% - 48px), #58b368 calc(100% - 48px), #3f8f50);
     }
+    :host([background="false"]) canvas { background: none; }
   `;
 
   // Runs one dancer on a canvas, reading the live cfg object every frame.
@@ -81,8 +83,11 @@
     // running angle (0 = straight up, positive = leaning right), so travelling
     // sine waves in the bend read as air rippling up the tube.
 
+    // height of the strip below the fan's base line: the ground, or just enough to show the whole fan
+    const ground = () => cfg.background ? GROUND : Math.ceil(cfg.girth * 0.25);
+
     function chain(x, y, a, n, segLen, bend) {
-      const floor = H - GROUND;
+      const floor = H - ground();
       const pts = [{ x, y, a }];
       for (let i = 1; i <= n; i++) {
         a += bend(i / n, a);
@@ -145,10 +150,11 @@
       }
 
       const w = cfg.wildness;
-      const height = H * cfg.height;
+      // cap so tall settings in short widgets don't poke out of the top
+      const height = Math.min(H * cfg.height, H - ground() - cfg.girth);
 
       // start half a girth up so the round end cap stays hidden behind the fan
-      const body = chain(W / 2, H - GROUND - cfg.girth / 2, 0, BODY_SEGS, height / BODY_SEGS, u =>
+      const body = chain(W / 2, H - ground() - cfg.girth / 2, 0, BODY_SEGS, height / BODY_SEGS, u =>
         w * (0.05 * Math.sin(t * 2.1 - u * 5) + 0.035 * Math.sin(t * 3.7 - u * 9 + 1.3)) * (0.3 + u) + kinkBend(u, t) + wind * 0.03);
 
       const shoulder = body[Math.round(BODY_SEGS * 0.66)];
@@ -234,7 +240,7 @@
       ctx.strokeStyle = OUTLINE;
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.roundRect(W / 2 - w / 2, H - GROUND - h * 0.6, w, h, 8);
+      ctx.roundRect(W / 2 - w / 2, H - ground() - h * 0.6, w, h, 8);
       ctx.fill();
       ctx.stroke();
     }

@@ -23,7 +23,12 @@ The widget is full width and 400px tall by default. Size it with CSS.
 | `wind`       | `1`       | wind strength; `0` is calm                 |
 | `face`       | `happy`   | `happy`, `surprised` or `cool`             |
 | `hair`       | `true`    | `false` hides the hair                     |
+| `background` | `true`    | `false` drops the sky and ground (transparent) |
 
 ## Customizer
 
 Open `index.html` to tweak a dancer with sliders and copy its embed code. `embed-example.html` shows several dancers on one page.
+
+## License
+
+MIT, see [LICENSE](LICENSE).

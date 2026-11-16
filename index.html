@@ -10,28 +10,46 @@
   <sky-dancer id="dancer"></sky-dancer>
 
   <form id="controls">
-    <h1>Skydancer</h1>
-    <label>Body color <input type="color" data-key="color"></label>
-    <label>Arms &amp; hair color <input type="color" data-key="accent"></label>
-    <label>Height <input type="range" data-key="height" min="0.4" max="0.85" step="0.01"></label>
-    <label>Girth <input type="range" data-key="girth" min="30" max="110" step="1"></label>
-    <label>Arm length <input type="range" data-key="arm-length" min="0.15" max="0.5" step="0.01"></label>
-    <label>Speed <input type="range" data-key="speed" min="0.2" max="2.5" step="0.05"></label>
-    <label>Wildness <input type="range" data-key="wildness" min="0.2" max="2" step="0.05"></label>
-    <label>Wind <input type="range" data-key="wind" min="0" max="1.5" step="0.05"></label>
-    <label>Face
-      <select data-key="face">
-        <option value="happy">Happy</option>
-        <option value="surprised">Surprised</option>
-        <option value="cool">Cool</option>
-      </select>
-    </label>
-    <label class="row"><input type="checkbox" data-key="hair"> Hair</label>
-    <button type="button" id="randomize">Randomize</button>
-    <label>Embed code
-      <textarea id="embed-code" rows="6" readonly></textarea>
-    </label>
-    <button type="button" id="copy-embed">Copy embed code</button>
+    <header>
+      <div>
+        <h1>Skydancer</h1>
+        <p>Tweak it, then copy the embed code.</p>
+      </div>
+      <button type="button" id="randomize" class="secondary" title="Randomize every setting">Randomize</button>
+    </header>
+
+    <section>
+      <h2>Look</h2>
+      <div class="colors">
+        <label class="color"><input type="color" data-key="color"><span>Body</span></label>
+        <label class="color"><input type="color" data-key="accent"><span>Arms &amp; hair</span></label>
+      </div>
+      <label class="field"><span class="head">Height<output></output></span><input type="range" data-key="height" min="0.4" max="0.85" step="0.01"></label>
+      <label class="field"><span class="head">Girth<output></output></span><input type="range" data-key="girth" min="30" max="110" step="1"></label>
+      <label class="field"><span class="head">Arm length<output></output></span><input type="range" data-key="arm-length" min="0.15" max="0.5" step="0.01"></label>
+      <label class="field"><span class="head">Face</span>
+        <select data-key="face">
+          <option value="happy">Happy</option>
+          <option value="surprised">Surprised</option>
+          <option value="cool">Cool</option>
+        </select>
+      </label>
+      <label class="toggle"><span>Hair</span><input type="checkbox" data-key="hair"></label>
+      <label class="toggle"><span>Sky background</span><input type="checkbox" data-key="background"></label>
+    </section>
+
+    <section>
+      <h2>Motion</h2>
+      <label class="field"><span class="head">Speed<output></output></span><input type="range" data-key="speed" min="0.2" max="2.5" step="0.05"></label>
+      <label class="field"><span class="head">Wildness<output></output></span><input type="range" data-key="wildness" min="0.2" max="2" step="0.05"></label>
+      <label class="field"><span class="head">Wind<output></output></span><input type="range" data-key="wind" min="0" max="1.5" step="0.05"></label>
+    </section>
+
+    <section>
+      <h2>Embed</h2>
+      <textarea id="embed-code" rows="5" readonly aria-label="Embed code"></textarea>
+      <button type="button" id="copy-embed">Copy embed code</button>
+    </section>
   </form>
 
   <script src="skydancer.js"></script>
