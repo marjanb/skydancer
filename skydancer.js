@@ -188,7 +188,11 @@
       if (closeAt && scale) {
         const dx = e.offsetX / scale - closeAt.x, dy = e.offsetY / scale - closeAt.y;
         if (dx * dx + dy * dy <= closeAt.r * closeAt.r) {
-          canvas.getRootNode().host.style.display = 'none';  // the loop stops with it
+          const host = canvas.getRootNode().host;
+          // the page can take it over with preventDefault; otherwise it hides itself
+          if (host.dispatchEvent(new CustomEvent('close', { bubbles: true, cancelable: true }))) {
+            host.style.display = 'none';  // the loop stops with it
+          }
           return;
         }
       }

@@ -1,6 +1,14 @@
 // Control panel for the customizer page: each input drives the matching
 // attribute on the <sky-dancer> widget.
 const dancer = document.getElementById('dancer');
+const restore = document.getElementById('restore');
+
+// the widget hides itself on close; keep the stage so the panel doesn't jump
+dancer.addEventListener('close', () => { restore.hidden = false; });
+restore.addEventListener('click', () => {
+  dancer.style.display = '';
+  restore.hidden = true;
+});
 const inputs = [...document.querySelectorAll('#controls [data-key]')];
 
 // settings persist across reloads; storage can be blocked (private mode), so never let it throw

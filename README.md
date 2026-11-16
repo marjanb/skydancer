@@ -36,6 +36,8 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 
 The `sign` attribute puts words in a hand-drawn speech balloon beside the dancer's head. It drifts rather than tracking the head, so the words stay readable.
 
+The balloon carries a close button. Clicking it fires a cancelable `close` event and then hides the widget; call `preventDefault()` on that event to handle the dismissal yourself.
+
 Poking a dancer knocks the air out of it. Where the viewer's system asks for reduced motion, it holds a still pose instead of animating.
 
 ## Customizer
