@@ -21,8 +21,14 @@
     <section>
       <h2>Look</h2>
       <div class="colors">
-        <label class="color"><input type="color" data-key="color"><span>Body<output></output></span></label>
-        <label class="color"><input type="color" data-key="accent"><span>Arms &amp; hair<output></output></span></label>
+        <div class="swatch">
+          <label class="color"><input type="color" data-key="color"><span>Body</span></label>
+          <input type="text" class="hex" aria-label="Body colour hex" maxlength="7" spellcheck="false" autocomplete="off">
+        </div>
+        <div class="swatch">
+          <label class="color"><input type="color" data-key="accent"><span>Arms &amp; hair</span></label>
+          <input type="text" class="hex" aria-label="Arms and hair colour hex" maxlength="7" spellcheck="false" autocomplete="off">
+        </div>
       </div>
       <label class="field"><span class="head">Height<output></output></span><input type="range" data-key="height" min="0.4" max="0.85" step="0.01"></label>
       <label class="field"><span class="head">Girth<output></output></span><input type="range" data-key="girth" min="30" max="110" step="1"></label>

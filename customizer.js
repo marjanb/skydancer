@@ -35,13 +35,15 @@ const copyButton = document.getElementById('copy-embed');
 
 // readout next to each slider
 const pct = v => `${Math.round(v * 100)}%`;
-const hex = v => v.toUpperCase();
-const FORMATS = { height: pct, 'arm-length': pct, girth: String, color: hex, accent: hex };
+const FORMATS = { height: pct, 'arm-length': pct, girth: String };  // girth is relative now, not px
 
 function apply(el) {
   dancer.setAttribute(el.dataset.key, String(readInput(el)));
   const readout = el.closest('label').querySelector('output');
   if (readout) readout.value = (FORMATS[el.dataset.key] || (v => `${v.toFixed(2)}×`))(readInput(el));
+  // don't yank the text out from under someone mid-type
+  const hexField = el.closest('.swatch')?.querySelector('.hex');
+  if (hexField && document.activeElement !== hexField) hexField.value = el.value.toUpperCase();
   if (el.type === 'range') el.style.setProperty('--fill', `${(el.value - el.min) / (el.max - el.min) * 100}%`);
   const attrs = inputs
     .filter(input => !(input.dataset.key === 'background' && input.checked))  // sky is the widget default
@@ -70,6 +72,29 @@ for (const el of inputs) {
   // the input clamps stale saved values, so apply what it shows, not what was saved
   apply(el);
   el.addEventListener('input', () => { apply(el); save(); });
+}
+
+// typing a hex drives the colour picker next to it; #abc and a missing # are fine
+const HEX = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+function parseHex(value) {
+  const m = HEX.exec(value.trim());
+  if (!m) return null;
+  const d = m[1];
+  return `#${d.length === 3 ? [...d].map(x => x + x).join('') : d}`.toLowerCase();
+}
+
+for (const field of document.querySelectorAll('.hex')) {
+  const picker = field.closest('.swatch').querySelector('input[type="color"]');
+  field.addEventListener('input', () => {
+    const value = parseHex(field.value);
+    if (!value) return;  // still typing, or not a colour
+    picker.value = value;
+    apply(picker);
+    save();
+  });
+  // whatever is left in the box when focus goes, snap it back to the real colour
+  field.addEventListener('blur', () => { field.value = picker.value.toUpperCase(); });
 }
 
 document.getElementById('randomize').addEventListener('click', () => {
