@@ -9,14 +9,14 @@ An animated inflatable tube man as an embeddable web widget. It has no dependenc
 <sky-dancer color="#7d3cff" accent="#00e0c6" face="cool" style="height: 500px"></sky-dancer>
 ```
 
-The widget is full width and 400px tall by default. Size it with CSS.
+The widget is full width and 400px tall by default. Size it with CSS; the dancer scales with the widget's height and keeps its proportions.
 
 | Attribute    | Default   | Meaning                                    |
 |--------------|-----------|--------------------------------------------|
 | `color`      | `#ff3b30` | body colour                                |
 | `accent`     | `#ffd60a` | arms and hair colour                       |
 | `height`     | `0.68`    | body height as a fraction of the widget    |
-| `girth`      | `64`      | body thickness in px                       |
+| `girth`      | `64`      | body thickness (px at 1000px widget height) |
 | `arm-length` | `0.32`    | arm length as a fraction of body height    |
 | `speed`      | `1`       | animation speed                            |
 | `wildness`   | `1`       | how much it flails                         |

@@ -13,7 +13,7 @@
     color: '#ff3b30',
     accent: '#ffd60a',
     height: 0.68,     // fraction of canvas height
-    girth: 64,        // px
+    girth: 64,        // px at REF_HEIGHT; scales with the widget
     armLength: 0.32,  // fraction of body height
     speed: 1,
     wildness: 1,
@@ -40,6 +40,9 @@
   const BODY_SEGS = 28;
   const ARM_SEGS = 12;
   const HAIR_SEGS = 6;
+  // Everything is drawn in units of a REF_HEIGHT-tall widget and scaled to the
+  // real height, so the dancer keeps its proportions at any size.
+  const REF_HEIGHT = 1000;
   const GROUND = 48;      // matches the ground strip in STYLE; without a background the fan sits at the bottom edge
   const OUTLINE = '#1a1a2e';
 
@@ -50,7 +53,7 @@
       width: 100%;
       height: 100%;
       /* sky, then a hard stop into the ground strip the fan sits on */
-      background: linear-gradient(#3d9bff, #c9e8ff calc(100% - 48px), #58b368 calc(100% - 48px), #3f8f50);
+      background: linear-gradient(#3d9bff, #c9e8ff ${100 - GROUND / REF_HEIGHT * 100}%, #58b368 ${100 - GROUND / REF_HEIGHT * 100}%, #3f8f50);
     }
     :host([background="false"]) canvas { background: none; }
   `;
@@ -67,11 +70,13 @@
 
     function resize() {
       const dpr = window.devicePixelRatio || 1;
-      W = canvas.clientWidth;
-      H = canvas.clientHeight;
-      canvas.width = W * dpr;
-      canvas.height = H * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const scale = canvas.clientHeight / REF_HEIGHT;
+      if (!scale) return;  // not laid out yet
+      W = canvas.clientWidth / scale;
+      H = REF_HEIGHT;
+      canvas.width = canvas.clientWidth * dpr;
+      canvas.height = canvas.clientHeight * dpr;
+      ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
     }
 
     const observer = new ResizeObserver(resize);
@@ -116,7 +121,8 @@
     let gust = { start: 4, dur: 2, force: 0.7 };
 
     canvas.addEventListener('pointermove', e => {
-      pointerWind = Math.max(-1, Math.min(1, (e.offsetX - W / 2) / (W / 2)));
+      const half = canvas.clientWidth / 2;  // offsetX is in CSS px, not drawing units
+      pointerWind = Math.max(-1, Math.min(1, (e.offsetX - half) / half));
     }, { signal: events.signal });
     canvas.addEventListener('pointerleave', () => { pointerWind = 0; }, { signal: events.signal });
 
