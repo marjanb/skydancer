@@ -13,9 +13,7 @@ try {
 
 function save() {
   try {
-    const state = Object.fromEntries(inputs.map(el => [el.dataset.key, readInput(el)]));
-    state.caption = caption.value;  // the caption is page content, not an attribute
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(Object.fromEntries(inputs.map(el => [el.dataset.key, readInput(el)]))));
   } catch {}
 }
 
@@ -32,7 +30,6 @@ function writeInput(el, value) {
 
 // @1 follows the newest v1.x.x tag; jsDelivr generates the .min.js on the fly
 const CDN_URL = 'https://cdn.jsdelivr.net/gh/marjanbajct2/skydancer@1/skydancer.min.js';
-const caption = document.getElementById('caption');
 const embedCode = document.getElementById('embed-code');
 
 const escapeHtml = s => s.replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
@@ -59,7 +56,7 @@ function apply(el) {
     .filter(input => !(/^(night|glow)-color$/.test(input.dataset.key) && !document.querySelector('[data-key="night"]').checked))
     .filter(input => !(input.dataset.key === 'sign' && !input.value.trim()))
     .map(input => `${input.dataset.key}="${escapeAttr(readInput(input))}"`).join(' ');
-  embedCode.value = `<script src="${CDN_URL}"></script>\n<sky-dancer ${attrs} style="height: 500px">${escapeHtml(caption.value)}</sky-dancer>`;
+  embedCode.value = `<script src="${CDN_URL}"></script>\n<sky-dancer ${attrs} style="height: 500px"></sky-dancer>`;
 }
 
 copyButton.addEventListener('click', async () => {
@@ -106,16 +103,6 @@ for (const field of document.querySelectorAll('.hex')) {
   });
   // whatever is left in the box when focus goes, snap it back to the real colour
   field.addEventListener('blur', () => { field.value = picker.value.toUpperCase(); });
-}
-
-// the caption is the element's own content, so the page can style it
-if (typeof saved.caption === 'string') caption.value = saved.caption;
-applyCaption();
-caption.addEventListener('input', () => { applyCaption(); save(); });
-
-function applyCaption() {
-  dancer.textContent = caption.value;
-  if (inputs.length) apply(inputs[0]);  // the snippet carries the caption too
 }
 
 document.getElementById('randomize').addEventListener('click', () => {

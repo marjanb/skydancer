@@ -74,6 +74,12 @@
   const SPACING = 0.55;
   // a crowd looks like a crowd when they aren't all the same size
   const SIZES = [1, 0.84, 0.94, 0.8, 0.9, 0.87];
+
+  // A hand-drawn speech balloon: the oval sits up and to one side, its tail
+  // trailing down to the tip at (0, h) in these coordinates.
+  const BALLOON_D = 'M83.0872 0.110558C82.8615 0.165718 80.5781 0.362434 78.012 0.533096C66.0555 1.35191 63.1793 1.69016 57.6526 2.95889C48.0088 5.13088 39.4645 8.65517 32.7263 13.1957C28.2715 16.1848 25.197 18.8667 22.8568 21.8282C17.9228 27.977 15.6101 33.7305 15.6377 39.738C15.6653 45.6903 17.6678 50.4842 22.4621 56.0418C23.3927 57.1416 24.1544 58.1293 24.1544 58.2689C24.1544 58.6361 16.315 70.7656 12.6219 76.1232C8.36352 82.3013 0.92044 93.5823 0.327613 94.7097C-0.265213 95.8663 -0.0394564 96.939 0.891144 97.2769C1.84932 97.6423 2.52659 97.3325 5.29081 95.245C8.27907 92.9609 16.5132 87.3185 24.5784 82.0454C27.9906 79.8165 32.2489 77.0532 34.0239 75.869C35.8007 74.7123 38.8183 72.7932 40.7346 71.5813L44.1744 69.4097L46.9386 70.2295C60.6426 74.2615 77.0263 74.9102 92.3933 72.0039C108.325 68.9855 120.761 63.853 131.165 56.0132C136.099 52.2622 140.977 46.4224 143.121 41.6268C148.507 29.6394 143.685 18.1311 129.755 9.67063C122.085 5.01635 108.353 1.43458 93.6909 0.248596C90.3632 -0.00307465 84.1023 -0.0894012 83.0872 0.110558ZM104.827 4.05815C119.434 7.04723 128.457 11.1682 135.253 18.022C139.087 21.8868 140.893 25.1854 141.484 29.4742C143.457 43.8025 125.467 59.3724 99.3004 65.9436C89.5997 68.369 82.9166 69.1875 73.0764 69.1875C65.0405 69.1582 61.4301 68.8206 54.3248 67.3812C48.7136 66.2245 48.2621 66.084 47.8951 65.2652C47.7262 64.8704 47.416 64.5615 47.2471 64.5615C47.0489 64.5615 44.6242 65.9427 41.8048 67.6337C38.9854 69.2989 36.2505 70.9064 35.7145 71.1891C34.5582 71.7821 31.5131 73.7275 18.0056 82.6413C12.4513 86.2785 7.74139 89.3817 7.54493 89.5231C7.31918 89.6351 9.49058 86.3093 12.3392 82.079C15.1879 77.8764 19.4446 71.4154 21.8141 67.7213C24.182 64.0547 26.8049 60.0211 27.6511 58.8093L29.2021 56.5805L26.8618 54.1261C22.6879 49.7252 20.7715 46.1735 20.2356 41.8002C19.305 34.4395 23.5633 25.8071 31.1477 19.6583C37.1259 14.8351 43.1886 11.676 52.0138 8.71445C62.8691 5.07722 75.1082 3.72295 94.1407 3.94704C100.147 4.03323 101.529 4.00417 101.05 3.72147C100.091 3.18536 100.908 3.26865 104.827 4.05815Z';
+  const BALLOON = { w: 146, h: 98, cx: 81, cy: 37, rx: 60, ry: 32 };
+  let balloonPath = null, balloonFill = null;
   const OUTLINE = '#1a1a2e';
 
   const STYLE = `
@@ -81,8 +87,6 @@
     :host {
       display: inline-block;
       vertical-align: middle;
-      position: relative;
-      container-type: size;
       height: 400px;
       aspect-ratio: calc(${CROP_RATIO} + (var(--count, 1) - 1) * ${SPACING});
     }
@@ -98,23 +102,6 @@
     }
     /* last, so transparent wins over night */
     canvas.bare { background: none; }
-
-    /* whatever the page puts inside the tag, held still so it stays readable */
-    .caption {
-      position: absolute;
-      left: 5%;
-      right: 5%;
-      top: 5%;
-      text-align: center;
-      pointer-events: none;  /* the dancer behind is still pokeable */
-      font-family: system-ui, -apple-system, sans-serif;
-      font-weight: 800;
-      line-height: 1.1;
-      font-size: 24px;
-      font-size: clamp(13px, 11cqh, 64px);
-      color: #fff;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, .55), 0 1px 2px rgba(0, 0, 0, .7);
-    }
   `;
 
   // Runs one dancer on a canvas, reading the live cfg object every frame.
@@ -368,12 +355,16 @@
     let drift = null;
 
     function drawBubble(at, speakFrom, girth, text) {
-      const pad = H * 0.022;
-      let size = H * 0.055;
+      balloonPath ??= new Path2D(BALLOON_D);
+      // the path's second subpath is its inner edge: filling that covers the
+      // oval AND the hollow of the tail, which an ellipse alone would miss
+      balloonFill ??= new Path2D(BALLOON_D.slice(BALLOON_D.indexOf('M', 1)));
+
+      let size = H * 0.05;
       const fit = () => { ctx.font = `700 ${size}px system-ui, -apple-system, sans-serif`; };
       fit();
 
-      // wrap, so a long message stays a balloon instead of a flat ribbon
+      // wrap, so a long message fills the balloon instead of stretching it
       const words = text.split(/\s+/).filter(Boolean);
       const wrap = max => {
         const lines = [];
@@ -387,59 +378,52 @@
         return lines;
       };
 
-      const room = W * 0.26;
-      let lines = wrap(room);
-      let widest = Math.max(...lines.map(l => ctx.measureText(l).width));
-      if (lines.length > 3 || widest > room) {  // a lot of words, or one enormous one
-        size *= Math.min(3 / lines.length, room / widest);
+      const lines = wrap(H * 0.3);
+      const widest = Math.max(...lines.map(l => ctx.measureText(l).width));
+      let step = size * 1.2;
+
+      // the balloon scales to its text: an oval holds a box about sqrt(2) smaller
+      let scale = Math.max(
+        widest * 0.71 / BALLOON.rx,
+        lines.length * step * 0.71 / BALLOON.ry,
+        H * 0.0017,  // never so small it reads as a speck
+      );
+
+      // and shrinks, text and all, rather than overrunning the canvas or
+      // blowing the hand-drawn outline up into a thick black band
+      const cap = Math.min(W * 0.5 / BALLOON.w, H * 0.0033);
+      if (scale > cap) {
+        const f = cap / scale;
+        scale = cap;
+        size *= f;
+        step = size * 1.2;
         fit();
-        lines = wrap(room);
-        widest = Math.max(...lines.map(l => ctx.measureText(l).width));
       }
 
-      const step = size * 1.2;
+      const bw = BALLOON.w * scale, bh = BALLOON.h * scale;
+      // the tail's tip is the origin; the balloon hangs up and to one side of it
+      const side = speakFrom.x + girth * 0.5 + bw < W ? 1 : -1;
+      const tipX = at.x + side * girth * 0.45;
+      const originX = side > 0
+        ? Math.max(0, Math.min(W - bw, tipX))
+        : Math.max(bw, Math.min(W, tipX));
+      const originY = Math.max(0, at.y - bh);
 
-      // an oval needs about sqrt(2) times the half-size of the text block it holds
-      const rx = Math.min(widest, W * 0.42) * 0.72 + pad;
-      const ry = lines.length * step * 0.72 + pad * 0.5;
-
-      // sit to the right unless that would run off the canvas, then keep it on
-      const side = at.x + girth * 0.5 + rx * 2 + pad * 2 < W ? 1 : -1;
-      const cx = Math.max(rx, Math.min(W - rx, at.x + side * (girth * 0.5 + pad + rx)));
-      const cy = Math.min(H - ground() - ry, Math.max(ry + pad, at.y));
-
-      const lw = Math.max(2.5, H * 0.005);
-      ctx.lineWidth = lw;
-      ctx.strokeStyle = OUTLINE;
+      ctx.save();
+      ctx.translate(originX, originY);
+      ctx.scale(side * scale, scale);
       ctx.fillStyle = '#fffdf6';
+      ctx.fill(balloonFill);
+      ctx.fillStyle = OUTLINE;
+      ctx.fill(balloonPath);
+      ctx.restore();
 
-      // tail: leaves the balloon facing the dancer and curves to a point at it.
-      // Drawn first so the balloon covers where it joins.
-      const aim = { x: speakFrom.x + side * girth * 0.45, y: speakFrom.y };
-      const towards = Math.atan2(aim.y - cy, aim.x - cx);
-      // a stubby tail that points at the dancer, rather than a thread stretched to it
-      const reach = Math.min(Math.hypot(aim.x - cx, aim.y - cy), rx + ry * 1.3);
-      const tip = { x: cx + Math.cos(towards) * reach, y: cy + Math.sin(towards) * reach };
-      const on = a => ({ x: cx + rx * Math.cos(a), y: cy + ry * Math.sin(a) });
-      const p1 = on(towards - 0.5), p2 = on(towards + 0.5);
-
-      ctx.beginPath();
-      ctx.moveTo(p1.x, p1.y);
-      ctx.quadraticCurveTo((p1.x + tip.x) / 2, (p1.y + tip.y) / 2 - ry * 0.25, tip.x, tip.y);
-      ctx.quadraticCurveTo((p2.x + tip.x) / 2, (p2.y + tip.y) / 2 + ry * 0.25, p2.x, p2.y);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
+      // text last and untransformed, so a mirrored balloon doesn't mirror the words
       ctx.fillStyle = OUTLINE;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      lines.forEach((line, i) => ctx.fillText(line, cx, cy + (i - (lines.length - 1) / 2) * step));
+      const tx = originX + side * BALLOON.cx * scale, ty = originY + BALLOON.cy * scale;
+      lines.forEach((line, i) => ctx.fillText(line, tx, ty + (i - (lines.length - 1) / 2) * step));
     }
 
     function draw(dancers) {
@@ -534,7 +518,7 @@
       super();
       this.cfg = Object.fromEntries(KEYS.map(key => [key, parse(key, this.getAttribute(attrName(key)))]));
       const root = this.attachShadow({ mode: 'open' });
-      root.innerHTML = `<style>${STYLE}</style><canvas></canvas><div class="caption"><slot></slot></div>`;
+      root.innerHTML = `<style>${STYLE}</style><canvas></canvas>`;
       this.canvas = root.querySelector('canvas');
     }
 
