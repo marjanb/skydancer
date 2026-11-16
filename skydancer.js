@@ -394,7 +394,7 @@
         return lines;
       };
 
-      const lines = wrap(H * 0.3);
+      const lines = wrap(H * 0.45);  // wider lines keep the type bigger
       const widest = Math.max(...lines.map(l => ctx.measureText(l).width));
       let step = size * 1.2;
 
@@ -407,7 +407,7 @@
 
       // and shrinks, text and all, rather than overrunning the canvas or
       // blowing the hand-drawn outline up into a thick black band
-      const cap = Math.min(W * 0.5 / BALLOON.w, H * 0.0033);
+      const cap = Math.min(W * 0.4 / BALLOON.w, H * 0.0024);
       if (scale > cap) {
         const f = cap / scale;
         scale = cap;
