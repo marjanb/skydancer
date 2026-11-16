@@ -48,7 +48,6 @@
   // Everything is drawn in units of a REF_HEIGHT-tall widget and scaled to the
   // real height, so the dancer keeps its proportions at any size.
   const REF_HEIGHT = 1000;
-  const GROUND = 48;      // room below the fan, so its base isn't flush with the edge
   // Width per unit of height: the dancer's own span, measured at the wildest
   // wind, so the embed is a box around it rather than the whole page width.
   const CROP_RATIO = 1.25;
@@ -392,24 +391,13 @@
       ctx.restore();
     }
 
-    function drawFan(x, g) {
-      const w = g * 1.7, h = g * 0.55;
-      ctx.fillStyle = '#3a3f4b';
-      ctx.strokeStyle = OUTLINE;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.roundRect(x - w / 2, H - ground() - h * 0.6, w, h, 8);
-      ctx.fill();
-      ctx.stroke();
-    }
-
     // a soft patch of ground under the fan, leaning away with the air
     function drawShadow(x, g) {
       const base = H - ground();
       const w = g * 1.5 * (1 + Math.abs(wind) * 0.15), h = g * 0.28;
       ctx.fillStyle = 'rgba(0,0,0,.17)';
       ctx.beginPath();
-      ctx.ellipse(x + wind * g * 0.3, base + h * 0.35, w, h, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + wind * g * 0.3, base - h * 0.3, w, h, 0, 0, Math.PI * 2);
       ctx.fill();
     }
 
