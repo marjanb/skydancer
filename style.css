@@ -40,7 +40,10 @@ body {
   flex: 1;
   min-width: 0;
   min-height: 0;
-  height: auto;  /* fill the page instead of the widget's default 400px */
+  /* the customizer wants the whole stage, not the widget's cropped default */
+  align-self: stretch;
+  height: auto;
+  aspect-ratio: auto;
 }
 
 /* checkerboard so a transparent dancer reads as transparent */

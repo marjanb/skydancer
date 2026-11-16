@@ -3,8 +3,8 @@
 //   <script src="https://cdn.jsdelivr.net/gh/marjanbajct2/skydancer@1/skydancer.min.js"></script>
 //   <sky-dancer color="#ff3b30" accent="#ffd60a" face="cool" style="height: 500px"></sky-dancer>
 //
-// Every attribute is optional (defaults below). The widget is 400px tall and
-// full width unless the page styles it otherwise.
+// Every attribute is optional (defaults below). The widget crops to the dancer:
+// 400px tall and 1.2x as wide, unless the page styles it otherwise.
 
 (() => {
   if (customElements.get('sky-dancer')) return;  // script included twice
@@ -44,10 +44,19 @@
   // real height, so the dancer keeps its proportions at any size.
   const REF_HEIGHT = 1000;
   const GROUND = 48;      // matches the ground strip in STYLE; without a background the fan sits at the bottom edge
+  // Width per unit of height: the dancer's own span, measured at the wildest
+  // wind, so the embed is a box around it rather than the whole page width.
+  const CROP_RATIO = 1.2;
   const OUTLINE = '#1a1a2e';
 
   const STYLE = `
-    :host { display: block; height: 400px; }
+    /* width follows height, so the embed crops to the dancer */
+    :host {
+      display: inline-block;
+      vertical-align: middle;
+      height: 400px;
+      aspect-ratio: ${CROP_RATIO};
+    }
     canvas {
       display: block;
       width: 100%;

@@ -9,7 +9,7 @@ An animated inflatable tube man as an embeddable web widget. It has no dependenc
 <sky-dancer color="#7d3cff" accent="#00e0c6" face="cool" style="height: 500px"></sky-dancer>
 ```
 
-The widget is full width and 400px tall by default. Size it with CSS; the dancer scales with the widget's height and keeps its proportions.
+The widget is 400px tall by default and crops to the dancer: its width follows its height (1.2x), so it sits inline like an image rather than filling the page. Size it with CSS -- set the height and the width follows, or set both to override the crop. The dancer scales with the height and keeps its proportions.
 
 | Attribute    | Default   | Meaning                                    |
 |--------------|-----------|--------------------------------------------|
