@@ -55,6 +55,30 @@ body {
 
 #restore { flex: none; }
 
+#stage { position: relative; }
+
+#site {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+
+/* with a page behind it the dancer is a loose sticker you can drag about */
+#stage.previewing #dancer {
+  position: absolute;
+  width: auto;
+  aspect-ratio: auto;
+  cursor: grab;
+}
+
+#stage.previewing #dancer:active { cursor: grabbing; }
+
+/* the page behind must not swallow the pointer mid-drag */
+#stage.dragging #site { pointer-events: none; }
+
 /* checkerboard so a transparent dancer reads as transparent */
 #dancer[background="false"] {
   background: repeating-conic-gradient(var(--field) 0 25%, var(--bg) 0 50%) 0 0 / 24px 24px;

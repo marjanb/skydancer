@@ -8,6 +8,7 @@
 </head>
 <body>
   <div id="stage">
+    <iframe id="site" title="Your site" referrerpolicy="no-referrer" hidden></iframe>
     <sky-dancer id="dancer"></sky-dancer>
     <button type="button" id="restore" hidden>Show the dancer</button>
   </div>
@@ -78,6 +79,17 @@
         </select>
       </label>
       <label class="toggle"><span>Close button</span><input type="checkbox" data-key="closable"></label>
+    </section>
+
+    <section>
+      <h2>On your site</h2>
+      <p class="note">Load a page behind the dancer, then drag it where you want it. Turn Sky background off to see it over the page. Many sites refuse to be framed.</p>
+      <label class="field"><span class="head">Page address</span>
+        <input type="text" id="site-url" placeholder="example.com" autocomplete="off" spellcheck="false">
+      </label>
+      <label class="field"><span class="head">Dancer height <span class="hint">px</span></span>
+        <input type="number" id="dancer-size" min="80" max="1200" step="10" value="400">
+      </label>
     </section>
 
     <section>

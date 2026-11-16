@@ -2,7 +2,80 @@
 // attribute on the <sky-dancer> widget.
 const dancer = document.getElementById('dancer');
 const restore = document.getElementById('restore');
+const stage = document.getElementById('stage');
+const site = document.getElementById('site');
+const siteUrl = document.getElementById('site-url');
+const dancerSize = document.getElementById('dancer-size');
+const spot = { x: 60, y: 120 };  // where the dancer sits over a previewed page
 const hideButton = document.getElementById('hide');
+
+// a page behind the dancer, to see how it would sit on a real site
+function pageUrl(typed) {
+  try {
+    const url = new URL(/^[a-z][a-z0-9+.-]*:/i.test(typed) ? typed : `https://${typed}`);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
+  } catch {
+    return null;  // not a address at all, so nothing to show
+  }
+}
+
+function showSite() {
+  const url = pageUrl(siteUrl.value.trim());
+  stage.classList.toggle('previewing', !!url);
+  site.hidden = !url;
+  if (url) {
+    if (site.src !== url) site.src = url;
+  } else {
+    site.removeAttribute('src');
+  }
+  placeDancer();
+}
+
+const dancerHeight = () => Math.min(1200, Math.max(80, +dancerSize.value || 400));
+
+function placeDancer() {
+  if (!stage.classList.contains('previewing')) {
+    dancer.style.left = dancer.style.top = dancer.style.height = '';
+    return;
+  }
+  dancer.style.height = `${dancerHeight()}px`;
+  dancer.style.left = `${spot.x}px`;
+  dancer.style.top = `${spot.y}px`;
+}
+
+siteUrl.addEventListener('change', () => { showSite(); save(); });
+dancerSize.addEventListener('input', () => {
+  placeDancer();
+  if (inputs.length) apply(inputs[0]);  // the snippet carries the height
+  save();
+});
+
+// drag it around the page behind
+dancer.addEventListener('pointerdown', e => {
+  if (!stage.classList.contains('previewing')) return;
+  const held = dancer.getBoundingClientRect();
+  const grabX = e.clientX - held.left, grabY = e.clientY - held.top;
+  stage.classList.add('dragging');
+
+  const move = ev => {
+    const area = stage.getBoundingClientRect();
+    const box = dancer.getBoundingClientRect();
+    // never off the stage, or a reload would bring it back out of reach
+    spot.x = Math.round(Math.min(area.width - box.width, Math.max(0, ev.clientX - area.left - grabX)));
+    spot.y = Math.round(Math.min(area.height - box.height, Math.max(0, ev.clientY - area.top - grabY)));
+    placeDancer();
+  };
+  const drop = () => {
+    removeEventListener('pointermove', move);
+    removeEventListener('pointerup', drop);
+    removeEventListener('pointercancel', drop);  // a touch can be taken away mid-drag
+    stage.classList.remove('dragging');
+    save();
+  };
+  addEventListener('pointermove', move);
+  addEventListener('pointerup', drop);
+  addEventListener('pointercancel', drop);
+});
 
 // hide() and show() are the widget's API; the stage stays put either way
 hideButton.addEventListener('click', () => {
@@ -27,7 +100,9 @@ try {
 
 function save() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(Object.fromEntries(inputs.map(el => [el.dataset.key, readInput(el)]))));
+    const state = Object.fromEntries(inputs.map(el => [el.dataset.key, readInput(el)]));
+    Object.assign(state, { url: siteUrl.value, size: dancerSize.value, spot });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {}
 }
 
@@ -80,7 +155,7 @@ function apply(el) {
   embedScript.value = `<script src="${CDN_URL}"></script>`;
   // don't rewrite the box someone is typing or pasting into
   if (document.activeElement !== embedTag) {
-    embedTag.value = `<sky-dancer ${attrs} style="height: 500px"></sky-dancer>`;
+    embedTag.value = `<sky-dancer ${attrs} style="height: ${dancerHeight()}px"></sky-dancer>`;
   }
 }
 
@@ -104,6 +179,11 @@ wireCopy(copyTag, embedTag, 'Copy tag');
 // data-key is the attribute name ("arm-length"); the widget's cfg is camelCase
 const cfgKey = key => key.replace(/-(\w)/g, (_, c) => c.toUpperCase());
 const OFF = ['false', '0', 'no', 'off'];  // the same values the widget treats as off
+
+if (typeof saved.url === 'string') siteUrl.value = saved.url;
+if (saved.size) dancerSize.value = saved.size;
+if (saved.spot) Object.assign(spot, saved.spot);
+showSite();
 
 for (const el of inputs) {
   const key = el.dataset.key;
