@@ -394,7 +394,7 @@
         return lines;
       };
 
-      const lines = wrap(H * 0.45);  // wider lines keep the type bigger
+      const lines = wrap(H * 0.3);
       const widest = Math.max(...lines.map(l => ctx.measureText(l).width));
       let step = size * 1.2;
 
