@@ -9,6 +9,8 @@ hideButton.addEventListener('click', () => {
   dancer.hide();
   restore.hidden = false;
 });
+// the balloon's own close button hides it too
+dancer.addEventListener('close', () => { restore.hidden = false; });
 restore.addEventListener('click', () => {
   dancer.show();
   restore.hidden = true;
@@ -67,6 +69,7 @@ function apply(el) {
     .filter(input => !(input.dataset.key === 'count' && +input.value === 1))
     .filter(input => !(/^(night|glow)-color$/.test(input.dataset.key) && !document.querySelector('[data-key="night"]').checked))
     .filter(input => !(input.dataset.key === 'sign' && !input.value.trim()))
+    .filter(input => !(input.dataset.key === 'closable' && input.checked))
     .map(input => `${input.dataset.key}="${escapeAttr(readInput(input))}"`).join(' ');
   embedCode.value = `<script src="${CDN_URL}"></script>\n<sky-dancer ${attrs} style="height: 500px"></sky-dancer>`;
 }

@@ -26,6 +26,7 @@
     glowColor: '#ffecaa',   // the spotlight the dancer stands in at night
     count: 1,         // how many dancers stand together
     sign: '',         // words in a speech bubble by the dancer; empty for none
+    closable: true,   // a dismiss button on the balloon; false leaves it to the page
   };
 
   const OFF = ['false', '0', 'no', 'off'];
@@ -182,7 +183,21 @@
 
     // poking it knocks the air out: a kink now, and extra flailing that fades
     let punch = 0;
-    canvas.addEventListener('pointerdown', () => {
+    let closeAt = null;  // the balloon's dismiss button, in drawing units
+
+    canvas.addEventListener('pointerdown', e => {
+      const unit = canvas.clientHeight / REF_HEIGHT;
+      if (closeAt && unit && e.button === 0) {  // a right-click shouldn't dismiss it
+        const dx = e.offsetX / unit - closeAt.x, dy = e.offsetY / unit - closeAt.y;
+        if (dx * dx + dy * dy <= closeAt.r * closeAt.r) {
+          const host = canvas.getRootNode().host;
+          // the page can take the dismissal over with preventDefault
+          if (host.dispatchEvent(new CustomEvent('close', { bubbles: true, cancelable: true }))) {
+            host.hidden = true;  // the loop stops with it
+          }
+          return;
+        }
+      }
       if (reduced.matches) return;  // nothing would decay the punch without a loop
       punch = 1;
       kink = { start: t, dur: 0.9, dir: Math.random() < 0.5 ? -1 : 1, mag: 0.45 };
@@ -425,6 +440,30 @@
       ctx.textBaseline = 'middle';
       const tx = originX + side * BALLOON.cx * scale, ty = originY + BALLOON.cy * scale;
       lines.forEach((line, i) => ctx.fillText(line, tx, ty + (i - (lines.length - 1) / 2) * step));
+
+      if (!cfg.closable) return;
+
+      // a dismiss button on the rim, always at the visual top right
+      const rim = side > 0 ? 138 : 42;
+      const bx = originX + side * rim * scale, by = originY + 14 * scale;
+      const r = 13 * scale;
+      closeAt = { x: bx, y: by, r: r * 1.4 };  // a little slack for fingers
+
+      ctx.lineWidth = Math.max(1.5, 3 * scale);
+      ctx.strokeStyle = OUTLINE;
+      ctx.fillStyle = '#fffdf6';
+      ctx.beginPath();
+      ctx.arc(bx, by, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      const arm = r * 0.42;
+      ctx.beginPath();
+      ctx.moveTo(bx - arm, by - arm);
+      ctx.lineTo(bx + arm, by + arm);
+      ctx.moveTo(bx + arm, by - arm);
+      ctx.lineTo(bx - arm, by + arm);
+      ctx.stroke();
     }
 
     function draw(dancers) {
@@ -445,6 +484,7 @@
       }
 
       const sign = String(cfg.sign ?? '').trim();
+      closeAt = null;
       if (sign && dancers.length) {
         // one balloon for the lot of them, floating over the middle of the group
         const heads = dancers.map(d => d.body[Math.round(BODY_SEGS * 0.9)]);

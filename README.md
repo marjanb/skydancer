@@ -33,8 +33,11 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `glow-color` | `#ffecaa` | the spotlight the dancer stands in at night |
 | `count`      | `1`       | how many dancers stand together (max 6)    |
 | `sign`       | none      | words in a speech bubble by the dancer     |
+| `closable`   | `true`    | `false` drops the balloon's dismiss button |
 
 The `sign` attribute puts words in a hand-drawn speech balloon beside the dancer's head. It drifts rather than tracking the head, so the words stay readable.
+
+The balloon carries a dismiss button. Clicking it fires a bubbling, cancelable `close` event and then hides the widget; call `preventDefault()` on that event to handle it yourself, or set `closable="false"` to drop the button.
 
 To show and hide a dancer, call `hide()` and `show()` on the element, or set the standard `hidden` property:
 
