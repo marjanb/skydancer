@@ -42,7 +42,9 @@ function apply(el) {
   const readout = el.closest('label').querySelector('output');
   if (readout) readout.value = (FORMATS[el.dataset.key] || (v => `${v.toFixed(2)}×`))(readInput(el));
   if (el.type === 'range') el.style.setProperty('--fill', `${(el.value - el.min) / (el.max - el.min) * 100}%`);
-  const attrs = inputs.map(input => `${input.dataset.key}="${readInput(input)}"`).join(' ');
+  const attrs = inputs
+    .filter(input => !(input.dataset.key === 'background' && input.checked))  // sky is the widget default
+    .map(input => `${input.dataset.key}="${readInput(input)}"`).join(' ');
   embedCode.value = `<script src="${CDN_URL}"></script>\n<sky-dancer ${attrs} style="height: 500px"></sky-dancer>`;
 }
 
