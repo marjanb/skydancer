@@ -1,6 +1,6 @@
 // <sky-dancer> — an embeddable skydancer widget. Drop into any page with:
 //
-//   <script src="https://cdn.jsdelivr.net/gh/marjanbajct2/skydancer@1/skydancer.min.js"></script>
+//   <script src="https://cdn.jsdelivr.net/gh/marjanb/skydancer@1/skydancer.min.js"></script>
 //   <sky-dancer color="#ff3b30" accent="#ffd60a" face="cool" style="height: 500px"></sky-dancer>
 //
 // Every attribute is optional (defaults below). The widget crops to the dancer:

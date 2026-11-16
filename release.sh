@@ -7,7 +7,7 @@
 # up to about a week.
 set -euo pipefail
 
-REPO=marjanbajct2/skydancer
+REPO=marjanb/skydancer
 # .min.js is not in the repo: jsDelivr minifies the source on request, and
 # caches that result separately, so it needs purging too.
 FILES=(skydancer.js skydancer.min.js)

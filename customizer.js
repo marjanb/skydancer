@@ -43,7 +43,7 @@ function writeInput(el, value) {
 }
 
 // @1 follows the newest v1.x.x tag; jsDelivr generates the .min.js on the fly
-const CDN_URL = 'https://cdn.jsdelivr.net/gh/marjanbajct2/skydancer@1/skydancer.min.js';
+const CDN_URL = 'https://cdn.jsdelivr.net/gh/marjanb/skydancer@1/skydancer.min.js';
 const embedCode = document.getElementById('embed-code');
 
 const escapeHtml = s => s.replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));

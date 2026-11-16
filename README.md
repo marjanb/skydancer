@@ -2,14 +2,14 @@
 
 ![Three skydancers: a default one, a night one, and a pair](docs/preview.png)
 
-**[Try it live](https://marjanbajct2.github.io/skydancer/)** - tweak one and copy its embed code.
+**[Try it live](https://marjanb.github.io/skydancer/)** - tweak one and copy its embed code.
 
 An animated inflatable tube man as an embeddable web widget. It has no dependencies and pauses itself while scrolled out of view. The dancer leans toward the mouse pointer and gets blown around by random gusts.
 
 ## Embed
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/marjanbajct2/skydancer@1/skydancer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/marjanb/skydancer@1/skydancer.min.js"></script>
 <sky-dancer color="#7d3cff" accent="#00e0c6" face="cool" style="height: 500px"></sky-dancer>
 ```
 
