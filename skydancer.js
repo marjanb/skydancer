@@ -4,7 +4,7 @@
 //   <sky-dancer color="#ff3b30" accent="#ffd60a" face="cool" style="height: 500px"></sky-dancer>
 //
 // Every attribute is optional (defaults below). The widget crops to the dancer:
-// 400px tall and 1.25x as wide, plus a bit per extra dancer, unless the page styles it.
+// 400px tall and 1.4x as wide, plus a bit per extra dancer, unless the page styles it.
 
 (() => {
   if (customElements.get('sky-dancer')) return;  // script included twice
@@ -12,7 +12,6 @@
   const DEFAULTS = {
     color: '#ff3b30',
     accent: '#ffd60a',
-    height: 0.85,     // fraction of canvas height
     girth: 64,        // px at REF_HEIGHT; scales with the widget
     armLength: 0.32,  // fraction of body height
     speed: 1,
@@ -50,7 +49,7 @@
   const REF_HEIGHT = 1000;
   // Width per unit of height: the dancer's own span, measured at the wildest
   // wind, so the embed is a box around it rather than the whole page width.
-  const CROP_RATIO = 1.25;
+  const CROP_RATIO = 1.4;  // measured: the widest gust reaches 0.663 of the height either side
   const MAX_COUNT = 6;
   // gap between dancers, in widget heights: they stand shoulder to shoulder,
   // so a crowd clusters instead of each one claiming a full box
@@ -179,13 +178,17 @@
     // height of the strip below the fan's base line: the ground, or just enough to show the whole fan
     const ground = () => Math.ceil(cfg.girth * 0.25);
 
+    // The tube is held inside the canvas the way the ground already holds its
+    // feet: a wild gust presses it against the edge instead of running past it,
+    // so nothing is ever cut off, whatever the settings.
     function chain(x, y, a, n, segLen, bend) {
       const floor = H - ground();
+      const edge = cfg.girth * 0.62 + 8;  // half the tube, plus its outline
       const pts = [{ x, y, a }];
       for (let i = 1; i <= n; i++) {
         a += bend(i / n, a);
-        x += Math.sin(a) * segLen;
-        y = Math.min(y - Math.cos(a) * segLen, floor);
+        x = Math.min(W - edge, Math.max(edge, x + Math.sin(a) * segLen));
+        y = Math.min(floor, Math.max(edge, y - Math.cos(a) * segLen));
         pts.push({ x, y, a });
       }
       return pts;
@@ -298,7 +301,8 @@
       const w = cfg.wildness * (1 + punch * 2.5) * limp;
       const girth = cfg.girth * k;
       // cap so tall settings in short widgets don't poke out of the top
-      const height = Math.min(H * cfg.height, H - ground() - cfg.girth) * k;
+      // as tall as the box allows, less room for its rounded head and hair
+      const height = (H - ground() - cfg.girth * 1.6) * k;
       // The fabric is the same length whatever the pressure, so a sag bows the
       // tube over rather than shortening it: the head drops, the cloth stays.
       // It falls downwind, but still has to fall somewhere in dead calm.

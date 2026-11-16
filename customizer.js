@@ -18,9 +18,10 @@ function placeDancer() {
     spot.x = Math.round((area.width - box.width) / 2);
     spot.y = Math.round((area.height - box.height) / 2);
   }
-  // never off the stage, or a reload would bring it back out of reach
-  spot.x = Math.round(Math.min(Math.max(0, area.width - box.width), Math.max(0, spot.x)));
-  spot.y = Math.round(Math.min(Math.max(0, area.height - box.height), Math.max(0, spot.y)));
+  // it can hang off the edges, but never so far that there's nothing left to grab
+  const KEEP = 60;
+  spot.x = Math.round(Math.min(area.width - KEEP, Math.max(KEEP - box.width, spot.x)));
+  spot.y = Math.round(Math.min(area.height - KEEP, Math.max(KEEP - box.height, spot.y)));
   dancer.style.left = `${spot.x}px`;
   dancer.style.top = `${spot.y}px`;
 }
