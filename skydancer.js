@@ -22,10 +22,20 @@
     hair: true,
     background: true, // false = transparent, no sky or ground
     night: false,     // dark sky, dancer lit by a spotlight
+    nightColor: '#1b2748',  // the night sky at the horizon; the rest is shaded from it
     count: 1,         // how many dancers stand together
   };
 
   const OFF = ['false', '0', 'no', 'off'];
+
+  // one hex colour, dimmed by `f`, for shading the night sky out of a single value
+  function shade(hex, f) {
+    const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex).trim());
+    if (!m) return null;
+    const d = m[1].length === 3 ? [...m[1]].map(c => c + c).join('') : m[1];
+    const n = parseInt(d, 16);
+    return `rgb(${[n >> 16 & 255, n >> 8 & 255, n & 255].map(v => Math.round(v * f)).join(',')})`;
+  }
 
   const attrName = key => key.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`);
   const KEYS = Object.keys(DEFAULTS);
@@ -75,7 +85,7 @@
       background: linear-gradient(#3d9bff, #c9e8ff ${100 - GROUND / REF_HEIGHT * 100}%, #58b368 ${100 - GROUND / REF_HEIGHT * 100}%, #3f8f50);
     }
     canvas.night {
-      background: linear-gradient(#070b1c, #1b2748 ${100 - GROUND / REF_HEIGHT * 100}%, #16301f ${100 - GROUND / REF_HEIGHT * 100}%, #0c1c12);
+      background: linear-gradient(var(--night-top), var(--night-sky) ${100 - GROUND / REF_HEIGHT * 100}%, var(--night-ground) ${100 - GROUND / REF_HEIGHT * 100}%, var(--night-deep));
     }
     /* last, so transparent wins over night */
     canvas.bare { background: none; }
@@ -310,9 +320,19 @@
     }
 
     // the sky lives in CSS but the truth is in cfg, so mirror it onto the canvas
+    let litBy = '';
+
     function syncLook() {
       canvas.classList.toggle('night', !!cfg.night);
       canvas.classList.toggle('bare', !cfg.background);
+
+      // every frame runs through here, so only touch style when the colour moves
+      const base = shade(cfg.nightColor, 1) ? cfg.nightColor : DEFAULTS.nightColor;
+      if (base === litBy) return;
+      litBy = base;
+      for (const [name, f] of [['top', 0.35], ['sky', 1], ['ground', 0.62], ['deep', 0.42]]) {
+        canvas.style.setProperty(`--night-${name}`, shade(base, f));
+      }
     }
 
     function draw(dancers) {

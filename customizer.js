@@ -50,6 +50,7 @@ function apply(el) {
     .filter(input => !(input.dataset.key === 'background' && input.checked))
     .filter(input => !(input.dataset.key === 'night' && !input.checked))
     .filter(input => !(input.dataset.key === 'count' && +input.value === 1))
+    .filter(input => !(input.dataset.key === 'night-color' && !document.querySelector('[data-key="night"]').checked))
     .map(input => `${input.dataset.key}="${readInput(input)}"`).join(' ');
   embedCode.value = `<script src="${CDN_URL}"></script>\n<sky-dancer ${attrs} style="height: 500px"></sky-dancer>`;
 }
