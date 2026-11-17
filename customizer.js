@@ -55,16 +55,25 @@ dancerSize.addEventListener('input', () => {
   save();
 });
 
+// nothing on the stage bar should talk about a dancer that isn't there
+const stageHint = document.getElementById('stage-hint');
+
+function showStageBar(visible) {
+  hideButton.hidden = !visible;
+  stageHint.hidden = !visible;
+  restore.hidden = visible;
+}
+
 // hide() and show() are the widget's API; the stage stays put either way
 hideButton.addEventListener('click', () => {
   dancer.hide();
-  restore.hidden = false;
+  showStageBar(false);
 });
 // the balloon's own close button hides it too
-dancer.addEventListener('close', () => { restore.hidden = false; });
+dancer.addEventListener('close', () => { showStageBar(false); });
 restore.addEventListener('click', () => {
   dancer.show();
-  restore.hidden = true;
+  showStageBar(true);
 });
 const inputs = [...document.querySelectorAll('#controls [data-key]')];
 
@@ -142,14 +151,14 @@ function wireCopy(button, field, label) {
     } catch {
       // clipboard can be blocked (e.g. some file:// setups); leave it selected for Ctrl/Cmd+C
       field.select();
-      button.textContent = 'Press Ctrl/Cmd+C to copy';
+      button.textContent = 'Press Ctrl/Cmd+C';
     }
     setTimeout(() => { button.textContent = label; }, 1500);
   });
 }
 
-wireCopy(copyScript, embedScript, 'Copy script');
-wireCopy(copyTag, embedTag, 'Copy tag');
+wireCopy(copyScript, embedScript, 'Copy');
+wireCopy(copyTag, embedTag, 'Copy');
 
 // data-key is the attribute name ("arm-length"); the widget's cfg is camelCase
 const cfgKey = key => key.replace(/-(\w)/g, (_, c) => c.toUpperCase());

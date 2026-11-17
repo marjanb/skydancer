@@ -4,85 +4,114 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Skydancer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=JetBrains+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="stage">
+  <main id="stage">
     <sky-dancer id="dancer"></sky-dancer>
-    <button type="button" id="restore" hidden>Show the dancer</button>
-  </div>
+
+    <div id="stage-bar">
+      <span id="stage-hint">Drag the dancer to move it</span>
+      <button type="button" id="hide" class="ghost">Hide</button>
+      <button type="button" id="restore" class="ghost" hidden>Show the dancer</button>
+    </div>
+  </main>
 
   <form id="controls">
-    <header>
-      <div>
+    <header id="panel-head">
+      <div class="brand">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9.5 21c0-7 5-6.5 5-12.5V4"/>
+            <path d="M9.8 14.2c-2.2.2-3.6 1.5-4.3 3"/>
+            <path d="M14.3 9.8c2.2.2 3.8-.7 4.7-2.1"/>
+          </svg>
+        </span>
         <h1>Skydancer</h1>
-        <p>Tweak it, poke it, then copy the embed code.</p>
+        <button type="button" id="randomize" class="ghost" title="Randomize every setting">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/>
+          <path d="m18 2 4 4-4 4"/>
+          <path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/>
+          <path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/>
+          <path d="m18 14 4 4-4 4"/>
+        </svg>
+          Randomize
+        </button>
       </div>
-      <button type="button" id="randomize" class="secondary" title="Randomize every setting">Randomize</button>
+      <p>Tweak it, poke it, then copy the embed code.</p>
     </header>
 
-    <section>
-      <h2>Look</h2>
-      <div class="colors">
-        <div class="swatch">
-          <label class="color"><input type="color" data-key="color"><span>Body</span></label>
-          <input type="text" class="hex" aria-label="Body colour hex" maxlength="7" spellcheck="false" autocomplete="off">
+    <div class="panel-body">
+      <section class="card">
+        <h2>Look</h2>
+        <div class="colors">
+          <div class="swatch">
+            <label class="color"><input type="color" data-key="color"><span>Body</span></label>
+            <input type="text" class="hex" aria-label="Body colour hex" maxlength="7" spellcheck="false" autocomplete="off">
+          </div>
+          <div class="swatch">
+            <label class="color"><input type="color" data-key="accent"><span>Arms &amp; hair</span></label>
+            <input type="text" class="hex" aria-label="Arms and hair colour hex" maxlength="7" spellcheck="false" autocomplete="off">
+          </div>
         </div>
-        <div class="swatch">
-          <label class="color"><input type="color" data-key="accent"><span>Arms &amp; hair</span></label>
-          <input type="text" class="hex" aria-label="Arms and hair colour hex" maxlength="7" spellcheck="false" autocomplete="off">
+        <label class="field"><span class="head">Girth<output></output></span><input type="range" data-key="girth" min="30" max="110" step="1"></label>
+        <label class="field"><span class="head">Arm length<output></output></span><input type="range" data-key="arm-length" min="0.15" max="0.5" step="0.01"></label>
+        <label class="field"><span class="head">Face</span>
+          <select data-key="face">
+            <option value="happy">Happy</option>
+            <option value="surprised">Surprised</option>
+            <option value="cool">Cool</option>
+          </select>
+        </label>
+        <label class="toggle"><span>Hair</span><input type="checkbox" data-key="hair"></label>
+      </section>
+
+      <section class="card">
+        <h2>Motion</h2>
+        <label class="field"><span class="head">Speed<output></output></span><input type="range" data-key="speed" min="0.2" max="2.5" step="0.05"></label>
+        <label class="field"><span class="head">Wildness<output></output></span><input type="range" data-key="wildness" min="0.2" max="2" step="0.05"></label>
+        <label class="field"><span class="head">Wind<output></output></span><input type="range" data-key="wind" min="0" max="1.5" step="0.05"></label>
+        <label class="field"><span class="head">Dancers<output></output></span><input type="range" data-key="count" min="1" max="6" step="1"></label>
+      </section>
+
+      <section class="card">
+        <h2>Text</h2>
+        <label class="field"><span class="head">Speech bubble</span>
+          <input type="text" data-key="sign" placeholder="Sale!" autocomplete="off">
+        </label>
+        <label class="field"><span class="head">Bubble shape</span>
+          <select data-key="bubble">
+            <option value="drawn">Hand drawn</option>
+            <option value="box">Box</option>
+            <option value="burst">Burst</option>
+          </select>
+        </label>
+        <label class="toggle"><span>Close button</span><input type="checkbox" data-key="closable"></label>
+      </section>
+
+      <section class="card">
+        <h2>Embed</h2>
+        <label class="field"><span class="head"><span>Dancer height <span class="hint">px</span></span></span>
+          <input type="number" id="dancer-size" min="80" max="1200" step="10" value="400">
+        </label>
+        <div class="field">
+          <div class="head"><span>Script <span class="hint">once per page</span></span>
+            <button type="button" id="copy-script" class="chip">Copy</button>
+          </div>
+          <textarea id="embed-script" rows="3" readonly spellcheck="false" aria-label="Embed script"></textarea>
         </div>
-      </div>
-      <label class="field"><span class="head">Girth<output></output></span><input type="range" data-key="girth" min="30" max="110" step="1"></label>
-      <label class="field"><span class="head">Arm length<output></output></span><input type="range" data-key="arm-length" min="0.15" max="0.5" step="0.01"></label>
-      <label class="field"><span class="head">Face</span>
-        <select data-key="face">
-          <option value="happy">Happy</option>
-          <option value="surprised">Surprised</option>
-          <option value="cool">Cool</option>
-        </select>
-      </label>
-      <label class="toggle"><span>Hair</span><input type="checkbox" data-key="hair"></label>
-    </section>
-
-    <section>
-      <h2>Motion</h2>
-      <label class="field"><span class="head">Speed<output></output></span><input type="range" data-key="speed" min="0.2" max="2.5" step="0.05"></label>
-      <label class="field"><span class="head">Wildness<output></output></span><input type="range" data-key="wildness" min="0.2" max="2" step="0.05"></label>
-      <label class="field"><span class="head">Wind<output></output></span><input type="range" data-key="wind" min="0" max="1.5" step="0.05"></label>
-      <label class="field"><span class="head">Dancers<output></output></span><input type="range" data-key="count" min="1" max="6" step="1"></label>
-    </section>
-
-    <section>
-      <h2>Text</h2>
-      <label class="field"><span class="head">Speech bubble</span>
-        <input type="text" data-key="sign" placeholder="Sale!" autocomplete="off">
-      </label>
-      <label class="field"><span class="head">Bubble shape</span>
-        <select data-key="bubble">
-          <option value="drawn">Hand drawn</option>
-          <option value="box">Box</option>
-          <option value="burst">Burst</option>
-        </select>
-      </label>
-      <label class="toggle"><span>Close button</span><input type="checkbox" data-key="closable"></label>
-    </section>
-
-    <section>
-      <h2>Embed</h2>
-      <label class="field"><span class="head">Dancer height <span class="hint">px</span></span>
-        <input type="number" id="dancer-size" min="80" max="1200" step="10" value="400">
-      </label>
-      <label class="field"><span class="head">Script <span class="hint">once per page</span></span>
-        <textarea id="embed-script" rows="3" readonly spellcheck="false"></textarea>
-      </label>
-      <button type="button" id="copy-script" class="secondary">Copy script</button>
-      <label class="field"><span class="head">Tag <span class="hint">paste one to load it</span></span>
-        <textarea id="embed-tag" rows="5" spellcheck="false"></textarea>
-      </label>
-      <button type="button" id="copy-tag">Copy tag</button>
-      <button type="button" id="hide" class="secondary">Hide the dancer</button>
-    </section>
+        <div class="field">
+          <div class="head"><span>Tag <span class="hint">paste one to load it</span></span>
+            <button type="button" id="copy-tag" class="chip">Copy</button>
+          </div>
+          <textarea id="embed-tag" rows="5" spellcheck="false" aria-label="Embed tag"></textarea>
+        </div>
+      </section>
+    </div>
   </form>
 
   <script src="skydancer.js"></script>
