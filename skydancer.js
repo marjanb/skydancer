@@ -132,8 +132,68 @@
   // shaded cylinder, which keeps the dancer reading as a drawing.
   const RIM_EDGE = -0.55;    // left of this the tube catches the light
   const SHADE_EDGE = 0.25;   // right of this it falls into shadow
-  const RIM_LIGHT = 0.3;
-  const SHADE = 0.18;
+
+  // Both zones are painted in the tube's own colour rather than in white and
+  // black. A wash of white or black only drains a fill towards grey; swinging
+  // the hue instead -- warm into the light, cool into the shade -- and taking
+  // the saturation up on the way is what makes a flat colour look lively.
+  const WARM = 50;           // hue the lit edge leans toward
+  const COOL = 265;          // hue the shaded side leans toward
+  const RIM_LIGHT = 0.55;
+  const SHADE = 0.5;
+
+  // Whatever colour string the page handed us, the canvas resolves it. Reading
+  // a 1x1 fill back is the one answer that does not depend on how the browser
+  // chooses to serialise a colour -- fillStyle alone can come back as oklch()
+  // or color(), which no amount of string picking parses safely.
+  const swatch = Object.assign(document.createElement('canvas'), { width: 1, height: 1 })
+    .getContext('2d', { willReadFrequently: true });
+  const inkCache = new Map();
+
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+  // the short way round the wheel, so a red leans into orange, not into green
+  const lean = (h, target, amount) =>
+    (h + (((target - h + 540) % 360) - 180) * amount + 360) % 360;
+
+  function hsl(css) {
+    swatch.clearRect(0, 0, 1, 1);
+    swatch.fillStyle = '#000';   // a colour the browser can't read leaves this
+    swatch.fillStyle = css;
+    swatch.fillRect(0, 0, 1, 1);
+    const [r, g, b] = [...swatch.getImageData(0, 0, 1, 1).data].map(v => v / 255);
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), span = max - min;
+    const l = (max + min) / 2;
+    if (!span) return { h: 0, s: 0, l: l * 100 };
+    const h = max === r ? (g - b) / span + (g < b ? 6 : 0)
+            : max === g ? (b - r) / span + 2
+            : (r - g) / span + 4;
+    return { h: h * 60, s: span / (1 - Math.abs(2 * l - 1)) * 100, l: l * 100 };
+  }
+
+  // the two inks a tube of this colour is lit and shaded with
+  function inks(css) {
+    let ink = inkCache.get(css);
+    if (!ink) {
+      const { h, s, l } = hsl(css);
+      // A grey has no hue of its own to lean, so it takes the light's outright
+      // -- warm into the lit edge, cool into the shade, which is what keeps a
+      // grey tube from going flat without turning it into a colour.
+      const hue = (target, amount) => s < 5 ? target : lean(h, target, amount);
+      // the lit edge never comes out darker than the tube, nor the shade lighter
+      ink = {
+        rim: `hsl(${hue(WARM, 0.3)} ${clamp(s * 1.2 + 18, 0, 100)}%`
+           + ` ${Math.min(100, l + 15)}% / ${(RIM_LIGHT * BLEND).toFixed(3)})`,
+        shade: `hsl(${hue(COOL, 0.28)} ${clamp(s * 1.15 + 10, 0, 100)}%`
+             + ` ${Math.max(0, l - 24)}% / ${(SHADE * BLEND).toFixed(3)})`,
+      };
+      // a colour picker being dragged hands us a new colour every frame, so
+      // the cache is there to spare the repeats, not to remember every shade
+      if (inkCache.size > 64) inkCache.clear();
+      inkCache.set(css, ink);
+    }
+    return ink;
+  }
 
   // The shadow gathering at the foot of the picture is contact shadow, not
   // tube shading, so it keeps its own number -- a flat illustration still
@@ -397,13 +457,13 @@
       const reach = offset =>
         Math.max(0, Math.sqrt(Math.max(0, dome * dome - offset * offset)) - thickness * 0.5);
 
+      const { rim, shade } = inks(color);
       for (let i = 0; i < bands; i++) {
         const u = first + i * step;
-        const net = (u < RIM_EDGE ? RIM_LIGHT : u > SHADE_EDGE ? -SHADE : 0) * BLEND;
-        if (!net) continue;  // the base colour already stands for the middle
-        const ink = net > 0 ? `255,255,255,${net.toFixed(3)}` : `0,0,0,${(-net).toFixed(3)}`;
+        const ink = u < RIM_EDGE ? rim : u > SHADE_EDGE ? shade : null;
+        if (!ink) continue;  // the base colour already stands for the middle
         const offset = u * width * 0.5;
-        strokeChain(pts, thickness, `rgba(${ink})`, offset, reach(offset));
+        strokeChain(pts, thickness, ink, offset, reach(offset));
       }
 
       // less light reaches the bottom of the tube, which plants it on the ground
