@@ -59,11 +59,6 @@ body {
 
 #restore { flex: none; }
 
-/* checkerboard on the widget itself, so you see its exact box */
-#dancer {
-  background: repeating-conic-gradient(var(--field) 0 25%, var(--bg) 0 50%) 0 0 / 24px 24px;
-}
-
 /* ---- panel ---- */
 
 #controls {
