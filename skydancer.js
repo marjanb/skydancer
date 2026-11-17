@@ -139,7 +139,7 @@
 
   // How hard the shading is laid on. The whole relief scales together, so
   // this is the one number to turn for a rounder or a flatter tube.
-  const RELIEF = 0.65;
+  const RELIEF = 0.45;
   const RIM = `rgba(255,255,255,${(0.14 * RELIEF).toFixed(3)})`;
 
   const STYLE = `
@@ -405,8 +405,10 @@
         const lit = cylinder(u);
         const d = lit - flat;
         // The gloss on the nylon rides the same ramp rather than sitting on
-        // top of it, so it reads as a sheen instead of a painted-on stripe.
-        const net = ((d > 0 ? d * 2 : d * 0.5) + Math.pow(lit, 34) * 0.32) * BLEND * RELIEF;
+        // top of it, so it reads as a sheen instead of a painted-on stripe. A
+        // tight, bright one is what made the tube read as a sausage, so it is
+        // kept broad and faint enough to stay part of the ramp.
+        const net = ((d > 0 ? d * 2 : d * 0.5) + Math.pow(lit, 16) * 0.14) * BLEND * RELIEF;
         if (Math.abs(net) < 0.012 * RELIEF) continue;
         const ink = net > 0 ? `255,255,255,${net.toFixed(3)}` : `0,0,0,${(-net).toFixed(3)}`;
         const offset = u * width * 0.5;
