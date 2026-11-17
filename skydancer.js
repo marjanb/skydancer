@@ -121,6 +121,22 @@
   const springy = x => 1 + 2.7 * (x - 1) ** 3 + 1.7 * (x - 1) ** 2;
   const OUTLINE = '#1a1a2e';
 
+  // Light from the upper left, tilted a little toward the viewer: x runs
+  // across the tube, z out of the screen.
+  const LIGHT = { x: -0.5, z: 0.866 };
+
+  // How lit a cylinder's surface is across its width, u running from -1 at the
+  // left edge to 1 at the right. The square root is the part of the normal
+  // pointing at the viewer, which is what makes the falloff read as round
+  // rather than as a flat ramp.
+  function cylinder(u) {
+    return Math.max(0, u * LIGHT.x + Math.sqrt(Math.max(0, 1 - u * u)) * LIGHT.z);
+  }
+
+  // two overlapping bands cover every point, so each carries about this much
+  // of the shading it would need on its own
+  const BLEND = 0.62;
+
   const STYLE = `
     /* width follows height, so the embed crops to the dancer */
     :host {
@@ -335,11 +351,19 @@
 
     // ---- drawing ----
 
-    function strokeChain(pts, width, style, offset = 0) {
+    function strokeChain(pts, width, style, offset = 0, reach = 0) {
       ctx.beginPath();
       for (const p of pts) {
         // offset along the segment normal, used for the highlight/shade bands
         ctx.lineTo(p.x + Math.cos(p.a) * offset, p.y + Math.sin(p.a) * offset);
+      }
+      if (reach) {
+        // Carry a band on past the last point so its own round cap lands on
+        // the tube's domed end. Without this the dome keeps the flat base
+        // colour and the shading stops at a visible straight edge.
+        const end = pts[pts.length - 1];
+        ctx.lineTo(end.x + Math.cos(end.a) * offset + Math.sin(end.a) * reach,
+                   end.y + Math.sin(end.a) * offset - Math.cos(end.a) * reach);
       }
       ctx.lineWidth = width;
       ctx.strokeStyle = style;
@@ -349,8 +373,46 @@
     function drawTube(pts, width, color) {
       strokeChain(pts, width + 6, OUTLINE);
       strokeChain(pts, width, color);
-      strokeChain(pts, width * 0.18, 'rgba(255,255,255,.3)', -width * 0.25);
-      strokeChain(pts, width * 0.25, 'rgba(0,0,0,.12)', width * 0.3);
+
+      // Shade it as a cylinder, in bands across the tube. A wide tube needs
+      // more of them or the ramp shows its seams; a thin one spans too few
+      // pixels to be worth the strokes.
+      const bands = Math.max(5, Math.min(24, Math.round(width / 4)));
+      // Each band is twice its own spacing, so every point is painted by two
+      // of them and the steps blend away; BLEND takes the alphas back down by
+      // what that doubling adds. Spacing then falls out of where the band
+      // centres have to sit for the outermost one's edge to land on EDGE --
+      // which matters most on a thin tube, where a band is a big fraction of
+      // the width and would otherwise paint past the silhouette.
+      const EDGE = 0.96;
+      const step = 2 * EDGE / (bands + 1);
+      const thickness = step * width;
+      const first = -EDGE * (bands - 1) / (bands + 1);
+      const flat = cylinder(0);
+      // how far a band at that offset has to run past the end to reach the
+      // dome, inset enough that its round cap stays inside the silhouette
+      const dome = width * 0.5 - thickness * 0.35;
+      const reach = offset =>
+        Math.max(0, Math.sqrt(Math.max(0, dome * dome - offset * offset)) - thickness * 0.5);
+
+      for (let i = 0; i < bands; i++) {
+        const u = first + i * step;
+        const lit = cylinder(u);
+        const d = lit - flat;
+        // The gloss on the nylon rides the same ramp rather than sitting on
+        // top of it, so it reads as a sheen instead of a painted-on stripe.
+        const net = ((d > 0 ? d * 2 : d * 0.5) + Math.pow(lit, 34) * 0.32) * BLEND;
+        if (Math.abs(net) < 0.012) continue;
+        const ink = net > 0 ? `255,255,255,${net.toFixed(3)}` : `0,0,0,${(-net).toFixed(3)}`;
+        const offset = u * width * 0.5;
+        strokeChain(pts, thickness, `rgba(${ink})`, offset, reach(offset));
+      }
+
+      // the bounce light down the shaded edge: the far edge lifting again is
+      // what stops a cylinder reading as a flat ramp
+      strokeChain(pts, width * 0.05, 'rgba(255,255,255,.14)', width * 0.44, reach(width * 0.44));
+      // less light reaches the bottom of the tube, which plants it on the ground
+      strokeChain(pts, width, depthShade);
     }
 
     function drawFace(p, g, t) {
@@ -560,6 +622,12 @@
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
+      // one gradient for every tube this frame: it lives in canvas space, so
+      // it darkens whatever part of a tube happens to hang low
+      const floor = H - ground();
+      depthShade = ctx.createLinearGradient(0, floor, 0, floor - H * 0.55);
+      depthShade.addColorStop(0, 'rgba(0,0,0,.22)');
+      depthShade.addColorStop(1, 'rgba(0,0,0,0)');
 
       for (const { body, arms, hair, girth, x, t } of dancers) {
         for (const strand of hair) strokeChain(strand, girth * 0.1 + 4, OUTLINE);
@@ -590,7 +658,7 @@
 
     // ---- loop ----
 
-    let t = 0, last = performance.now(), raf, frameDt = 0;
+    let t = 0, last = performance.now(), raf, frameDt = 0, depthShade;
 
     function render() { draw(simulate(t)); }
 
