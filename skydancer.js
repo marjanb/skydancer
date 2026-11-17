@@ -137,10 +137,14 @@
   // of the shading it would need on its own
   const BLEND = 0.62;
 
-  // How hard the shading is laid on. The whole relief scales together, so
-  // this is the one number to turn for a rounder or a flatter tube.
-  const RELIEF = 0.45;
-  const RIM = `rgba(255,255,255,${(0.14 * RELIEF).toFixed(3)})`;
+  // How hard the shading across a tube is laid on: the one number to turn
+  // for a rounder or a flatter tube.
+  const RELIEF = 0.3;
+
+  // The shadow gathering at the foot of the picture is contact shadow, not
+  // relief, so it keeps its own number -- a flat illustration still wants its
+  // subject planted on the ground.
+  const GROUNDED = 0.14;
 
   const STYLE = `
     /* width follows height, so the embed crops to the dancer */
@@ -404,20 +408,17 @@
         const u = first + i * step;
         const lit = cylinder(u);
         const d = lit - flat;
-        // The gloss on the nylon rides the same ramp rather than sitting on
-        // top of it, so it reads as a sheen instead of a painted-on stripe. A
-        // tight, bright one is what made the tube read as a sausage, so it is
-        // kept broad and faint enough to stay part of the ramp.
-        const net = ((d > 0 ? d * 2 : d * 0.5) + Math.pow(lit, 16) * 0.14) * BLEND * RELIEF;
+        // Shaded like a drawing rather than a render: the lit side is left as
+        // the flat base colour and nearly all the relief goes into one soft
+        // shadow down the far side. No specular at all -- a sheen is what
+        // makes a tube look photographed instead of drawn.
+        const net = (d > 0 ? d * 0.35 : d) * BLEND * RELIEF;
         if (Math.abs(net) < 0.012 * RELIEF) continue;
         const ink = net > 0 ? `255,255,255,${net.toFixed(3)}` : `0,0,0,${(-net).toFixed(3)}`;
         const offset = u * width * 0.5;
         strokeChain(pts, thickness, `rgba(${ink})`, offset, reach(offset));
       }
 
-      // the bounce light down the shaded edge: the far edge lifting again is
-      // what stops a cylinder reading as a flat ramp
-      strokeChain(pts, width * 0.05, RIM, width * 0.44, reach(width * 0.44));
       // less light reaches the bottom of the tube, which plants it on the ground
       strokeChain(pts, width, depthShade);
     }
@@ -633,7 +634,7 @@
       // it darkens whatever part of a tube happens to hang low
       const floor = H - ground();
       depthShade = ctx.createLinearGradient(0, floor, 0, floor - H * 0.55);
-      depthShade.addColorStop(0, `rgba(0,0,0,${(0.22 * RELIEF).toFixed(3)})`);
+      depthShade.addColorStop(0, `rgba(0,0,0,${GROUNDED})`);
       depthShade.addColorStop(1, 'rgba(0,0,0,0)');
 
       for (const { body, arms, hair, girth, x, t } of dancers) {
