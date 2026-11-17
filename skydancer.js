@@ -137,6 +137,11 @@
   // of the shading it would need on its own
   const BLEND = 0.62;
 
+  // How hard the shading is laid on. The whole relief scales together, so
+  // this is the one number to turn for a rounder or a flatter tube.
+  const RELIEF = 0.65;
+  const RIM = `rgba(255,255,255,${(0.14 * RELIEF).toFixed(3)})`;
+
   const STYLE = `
     /* width follows height, so the embed crops to the dancer */
     :host {
@@ -401,8 +406,8 @@
         const d = lit - flat;
         // The gloss on the nylon rides the same ramp rather than sitting on
         // top of it, so it reads as a sheen instead of a painted-on stripe.
-        const net = ((d > 0 ? d * 2 : d * 0.5) + Math.pow(lit, 34) * 0.32) * BLEND;
-        if (Math.abs(net) < 0.012) continue;
+        const net = ((d > 0 ? d * 2 : d * 0.5) + Math.pow(lit, 34) * 0.32) * BLEND * RELIEF;
+        if (Math.abs(net) < 0.012 * RELIEF) continue;
         const ink = net > 0 ? `255,255,255,${net.toFixed(3)}` : `0,0,0,${(-net).toFixed(3)}`;
         const offset = u * width * 0.5;
         strokeChain(pts, thickness, `rgba(${ink})`, offset, reach(offset));
@@ -410,7 +415,7 @@
 
       // the bounce light down the shaded edge: the far edge lifting again is
       // what stops a cylinder reading as a flat ramp
-      strokeChain(pts, width * 0.05, 'rgba(255,255,255,.14)', width * 0.44, reach(width * 0.44));
+      strokeChain(pts, width * 0.05, RIM, width * 0.44, reach(width * 0.44));
       // less light reaches the bottom of the tube, which plants it on the ground
       strokeChain(pts, width, depthShade);
     }
@@ -626,7 +631,7 @@
       // it darkens whatever part of a tube happens to hang low
       const floor = H - ground();
       depthShade = ctx.createLinearGradient(0, floor, 0, floor - H * 0.55);
-      depthShade.addColorStop(0, 'rgba(0,0,0,.22)');
+      depthShade.addColorStop(0, `rgba(0,0,0,${(0.22 * RELIEF).toFixed(3)})`);
       depthShade.addColorStop(1, 'rgba(0,0,0,0)');
 
       for (const { body, arms, hair, girth, x, t } of dancers) {
