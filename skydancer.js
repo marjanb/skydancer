@@ -483,23 +483,51 @@
 
     // ---- drawing ----
 
-    function strokeChain(pts, width, style, offset = 0, reach = 0) {
+    // `grow` runs the line on past both ends, along the chain's own direction.
+    // Only the bands use it, and only while clipped to the tube, so what runs
+    // past is trimmed back to the silhouette instead of showing.
+    function strokeChain(pts, width, style, offset = 0, grow = 0) {
+      const side = p => [p.x + Math.cos(p.a) * offset, p.y + Math.sin(p.a) * offset];
       ctx.beginPath();
+      if (grow) {
+        const [x, y] = side(pts[0]);
+        ctx.lineTo(x - Math.sin(pts[0].a) * grow, y + Math.cos(pts[0].a) * grow);
+      }
       for (const p of pts) {
         // offset along the segment normal, used for the highlight/shade bands
-        ctx.lineTo(p.x + Math.cos(p.a) * offset, p.y + Math.sin(p.a) * offset);
+        const [x, y] = side(p);
+        ctx.lineTo(x, y);
       }
-      if (reach) {
-        // Carry a band on past the last point so its own round cap lands on
-        // the tube's domed end. Without this the dome keeps the flat base
-        // colour and the shading stops at a visible straight edge.
+      if (grow) {
         const end = pts[pts.length - 1];
-        ctx.lineTo(end.x + Math.cos(end.a) * offset + Math.sin(end.a) * reach,
-                   end.y + Math.sin(end.a) * offset - Math.cos(end.a) * reach);
+        const [x, y] = side(end);
+        ctx.lineTo(x + Math.sin(end.a) * grow, y - Math.cos(end.a) * grow);
       }
       ctx.lineWidth = width;
       ctx.strokeStyle = style;
       ctx.stroke();
+    }
+
+    // The tube's own silhouette as a fillable path: along one side, round the
+    // far cap, back along the other, round the near one. Clipping the bands to
+    // it is what lets them run out to the domed ends instead of stopping short
+    // in rounded tips of their own.
+    function tubePath(pts, width) {
+      const r = width / 2;
+      const first = pts[0], last = pts[pts.length - 1];
+      const path = new Path2D();
+      pts.forEach((p, i) => {
+        const x = p.x + Math.cos(p.a) * r, y = p.y + Math.sin(p.a) * r;
+        if (i) path.lineTo(x, y); else path.moveTo(x, y);
+      });
+      path.arc(last.x, last.y, r, last.a, last.a - Math.PI, true);
+      for (let i = pts.length - 1; i >= 0; i--) {
+        const p = pts[i];
+        path.lineTo(p.x - Math.cos(p.a) * r, p.y - Math.sin(p.a) * r);
+      }
+      path.arc(first.x, first.y, r, first.a + Math.PI, first.a, true);
+      path.closePath();
+      return path;
     }
 
     function drawTube(pts, width, color) {
@@ -507,23 +535,23 @@
       strokeChain(pts, width, color);
 
       // The bands tile the width: each covers about its own slice, overlapping
-      // its neighbour only enough to leave no seam, so the steps stay crisp. Tiling SPAN rather than the
-      // whole width keeps the outermost band's edge just inside the
-      // silhouette, which matters most on a thin tube.
+      // its neighbour only enough to leave no seam, so the steps stay crisp.
+      // Tiling SPAN rather than the whole width keeps the outermost band's
+      // edge just inside the silhouette, which matters most on a thin tube.
       const thickness = SPAN * width / TONES * OVERLAP;
-      // how far a band at that offset has to run past the end to reach the
-      // dome, inset enough that its round cap stays inside the silhouette
-      const dome = width * 0.5 - thickness * 0.35;
-      const reach = offset =>
-        Math.max(0, Math.sqrt(Math.max(0, dome * dome - offset * offset)) - thickness * 0.5);
 
       const tones = inks(color);
+      // clipped to the tube, so each band can overrun both ends and still be
+      // cut off exactly at the edge
+      ctx.save();
+      ctx.clip(tubePath(pts, width));
       for (let i = 0; i < TONES; i++) {
         const ink = tones[i];
         if (!ink) continue;  // the base colour already stands for the middle
         const offset = ((2 * i + 1) / TONES - 1) * SPAN * width * 0.5;
-        strokeChain(pts, thickness, ink, offset, reach(offset));
+        strokeChain(pts, thickness, ink, offset, width);
       }
+      ctx.restore();
 
       // less light reaches the bottom of the tube, which plants it on the ground
       strokeChain(pts, width, depthShade);
