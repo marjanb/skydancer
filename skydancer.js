@@ -139,7 +139,7 @@
 
   // How hard the shading across a tube is laid on: the one number to turn
   // for a rounder or a flatter tube.
-  const RELIEF = 0.3;
+  const RELIEF = 0.4;
 
   // The shadow gathering at the foot of the picture is contact shadow, not
   // relief, so it keeps its own number -- a flat illustration still wants its
