@@ -121,29 +121,23 @@
   const springy = x => 1 + 2.7 * (x - 1) ** 3 + 1.7 * (x - 1) ** 2;
   const OUTLINE = '#1a1a2e';
 
-  // Light from the upper left, tilted a little toward the viewer: x runs
-  // across the tube, z out of the screen.
-  const LIGHT = { x: -0.5, z: 0.866 };
-
-  // How lit a cylinder's surface is across its width, u running from -1 at the
-  // left edge to 1 at the right. The square root is the part of the normal
-  // pointing at the viewer, which is what makes the falloff read as round
-  // rather than as a flat ramp.
-  function cylinder(u) {
-    return Math.max(0, u * LIGHT.x + Math.sqrt(Math.max(0, 1 - u * u)) * LIGHT.z);
-  }
-
   // two overlapping bands cover every point, so each carries about this much
   // of the shading it would need on its own
   const BLEND = 0.62;
 
-  // How hard the shading across a tube is laid on: the one number to turn
-  // for a rounder or a flatter tube.
-  const RELIEF = 0.2;
+  // A tube is drawn in three zones across its width, u running from -1 at the
+  // left edge to 1 at the right: a bright strip catching the light at the far
+  // left, flat base colour through the middle, and a band of shade down the
+  // right. It is vinyl catching a light from the upper left rather than a
+  // shaded cylinder, which keeps the dancer reading as a drawing.
+  const RIM_EDGE = -0.55;    // left of this the tube catches the light
+  const SHADE_EDGE = 0.25;   // right of this it falls into shadow
+  const RIM_LIGHT = 0.3;
+  const SHADE = 0.18;
 
   // The shadow gathering at the foot of the picture is contact shadow, not
-  // relief, so it keeps its own number -- a flat illustration still wants its
-  // subject planted on the ground.
+  // tube shading, so it keeps its own number -- a flat illustration still
+  // wants its subject planted on the ground.
   const GROUNDED = 0.14;
 
   const STYLE = `
@@ -383,9 +377,9 @@
       strokeChain(pts, width + 6, OUTLINE);
       strokeChain(pts, width, color);
 
-      // Shade it as a cylinder, in bands across the tube. A wide tube needs
-      // more of them or the ramp shows its seams; a thin one spans too few
-      // pixels to be worth the strokes.
+      // Lay the zones down in bands across the tube. A wide tube needs more of
+      // them or the zone edges turn blocky; a thin one spans too few pixels to
+      // be worth the strokes.
       const bands = Math.max(5, Math.min(24, Math.round(width / 4)));
       // Each band is twice its own spacing, so every point is painted by two
       // of them and the steps blend away; BLEND takes the alphas back down by
@@ -397,7 +391,6 @@
       const step = 2 * EDGE / (bands + 1);
       const thickness = step * width;
       const first = -EDGE * (bands - 1) / (bands + 1);
-      const flat = cylinder(0);
       // how far a band at that offset has to run past the end to reach the
       // dome, inset enough that its round cap stays inside the silhouette
       const dome = width * 0.5 - thickness * 0.35;
@@ -406,14 +399,8 @@
 
       for (let i = 0; i < bands; i++) {
         const u = first + i * step;
-        const lit = cylinder(u);
-        const d = lit - flat;
-        // Shaded like a drawing rather than a render: the lit side is left as
-        // the flat base colour and nearly all the relief goes into one soft
-        // shadow down the far side. No specular at all -- a sheen is what
-        // makes a tube look photographed instead of drawn.
-        const net = (d > 0 ? d * 0.35 : d) * BLEND * RELIEF;
-        if (Math.abs(net) < 0.012 * RELIEF) continue;
+        const net = (u < RIM_EDGE ? RIM_LIGHT : u > SHADE_EDGE ? -SHADE : 0) * BLEND;
+        if (!net) continue;  // the base colour already stands for the middle
         const ink = net > 0 ? `255,255,255,${net.toFixed(3)}` : `0,0,0,${(-net).toFixed(3)}`;
         const offset = u * width * 0.5;
         strokeChain(pts, thickness, `rgba(${ink})`, offset, reach(offset));
