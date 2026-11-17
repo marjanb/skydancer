@@ -121,17 +121,14 @@
   const springy = x => 1 + 2.7 * (x - 1) ** 3 + 1.7 * (x - 1) ** 2;
   const OUTLINE = '#1a1a2e';
 
-  // two overlapping bands cover every point, so each carries about this much
-  // of the shading it would need on its own
-  const BLEND = 0.62;
-
-  // A tube is drawn in three zones across its width, u running from -1 at the
-  // left edge to 1 at the right: a bright strip catching the light at the far
-  // left, flat base colour through the middle, and a band of shade down the
-  // right. It is vinyl catching a light from the upper left rather than a
-  // shaded cylinder, which keeps the dancer reading as a drawing.
-  const RIM_EDGE = -0.55;    // left of this the tube catches the light
-  const SHADE_EDGE = 0.25;   // right of this it falls into shadow
+  // A tube is stepped across its width in flat bands, u running from -1 at the
+  // left edge to 1 at the right: brightest at the lit edge, bare base colour
+  // through the middle, deepest at the shaded one. Stepping it rather than
+  // ramping it is what keeps the dancer reading as a drawing.
+  const TONES = 5;           // bands of colour across a tube; keep it odd,
+                             // so the middle one falls bare on the base colour
+  const SPAN = 0.96;         // how much of the width they cover, edge to edge
+  const OVERLAP = 1.06;      // a little, so no seam shows between neighbours
 
   // Both zones are painted in the tube's own colour rather than in white and
   // black. A wash of white or black only drains a fill towards grey; swinging
@@ -181,12 +178,20 @@
       // grey tube from going flat without turning it into a colour.
       const hue = (target, amount) => s < 5 ? target : lean(h, target, amount);
       // the lit edge never comes out darker than the tube, nor the shade lighter
-      ink = {
-        rim: `hsl(${hue(WARM, 0.3)} ${clamp(s * 1.2 + 18, 0, 100)}%`
-           + ` ${Math.min(100, l + 15)}% / ${(RIM_LIGHT * BLEND).toFixed(3)})`,
-        shade: `hsl(${hue(COOL, 0.28)} ${clamp(s * 1.15 + 10, 0, 100)}%`
-             + ` ${Math.max(0, l - 24)}% / ${(SHADE * BLEND).toFixed(3)})`,
-      };
+      const rim = `${hue(WARM, 0.3)} ${clamp(s * 1.2 + 18, 0, 100)}%`
+                + ` ${Math.min(100, l + 15)}%`;
+      const shade = `${hue(COOL, 0.28)} ${clamp(s * 1.15 + 10, 0, 100)}%`
+                  + ` ${Math.max(0, l - 24)}%`;
+      // One ink per band. How far a band sits from the middle is how strongly
+      // its ink is laid on, so the steps walk out from the base colour to the
+      // lit edge one way and to the shaded one the other.
+      ink = [];
+      for (let i = 0; i < TONES; i++) {
+        const p = (2 * i + 1) / TONES - 1;   // -1 at the lit edge, 1 at the shaded
+        const a = Math.abs(p);
+        ink.push(a < 1e-6 ? null
+          : `hsl(${p < 0 ? rim : shade} / ${((p < 0 ? RIM_LIGHT : SHADE) * a).toFixed(3)})`);
+      }
       // a colour picker being dragged hands us a new colour every frame, so
       // the cache is there to spare the repeats, not to remember every shade
       if (inkCache.size > 64) inkCache.clear();
@@ -437,32 +442,22 @@
       strokeChain(pts, width + 6, OUTLINE);
       strokeChain(pts, width, color);
 
-      // Lay the zones down in bands across the tube. A wide tube needs more of
-      // them or the zone edges turn blocky; a thin one spans too few pixels to
-      // be worth the strokes.
-      const bands = Math.max(5, Math.min(24, Math.round(width / 4)));
-      // Each band is twice its own spacing, so every point is painted by two
-      // of them and the steps blend away; BLEND takes the alphas back down by
-      // what that doubling adds. Spacing then falls out of where the band
-      // centres have to sit for the outermost one's edge to land on EDGE --
-      // which matters most on a thin tube, where a band is a big fraction of
-      // the width and would otherwise paint past the silhouette.
-      const EDGE = 0.96;
-      const step = 2 * EDGE / (bands + 1);
-      const thickness = step * width;
-      const first = -EDGE * (bands - 1) / (bands + 1);
+      // The bands tile the width: each covers about its own slice, overlapping
+      // its neighbour only enough to leave no seam, so the steps stay crisp. Tiling SPAN rather than the
+      // whole width keeps the outermost band's edge just inside the
+      // silhouette, which matters most on a thin tube.
+      const thickness = SPAN * width / TONES * OVERLAP;
       // how far a band at that offset has to run past the end to reach the
       // dome, inset enough that its round cap stays inside the silhouette
       const dome = width * 0.5 - thickness * 0.35;
       const reach = offset =>
         Math.max(0, Math.sqrt(Math.max(0, dome * dome - offset * offset)) - thickness * 0.5);
 
-      const { rim, shade } = inks(color);
-      for (let i = 0; i < bands; i++) {
-        const u = first + i * step;
-        const ink = u < RIM_EDGE ? rim : u > SHADE_EDGE ? shade : null;
+      const tones = inks(color);
+      for (let i = 0; i < TONES; i++) {
+        const ink = tones[i];
         if (!ink) continue;  // the base colour already stands for the middle
-        const offset = u * width * 0.5;
+        const offset = ((2 * i + 1) / TONES - 1) * SPAN * width * 0.5;
         strokeChain(pts, thickness, ink, offset, reach(offset));
       }
 
