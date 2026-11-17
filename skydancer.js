@@ -407,10 +407,12 @@
     }
 
     // A comic speech balloon that floats beside the head. It eases toward the
-    // head rather than tracking it, so the words drift instead of thrashing;
-    // only the tail keeps up with where the dancer actually is.
+    // head rather than tracking it, so the words drift instead of thrashing.
+    // The tail follows the same eased position, so it lags a little when the
+    // balloon is gliding across to the dancer's other side.
     let drift = null;
     let said = null, saidAt = 0;  // for the little pop when the words change
+    let sided = 1, placedX = null;  // which side the balloon sits on, and where it got to
 
     function drawBubble(at, speakFrom, girth, text) {
       const shape = bubble(cfg.bubble);
@@ -456,13 +458,29 @@
       }
 
       const bw = (shape.w + 2.5) * scale, bh = shape.h * scale;  // + the stroke
+
+      // It keeps the side it is on until that side truly runs out of room, so
+      // a dancer wandering across doesn't make it hop back and forth.
+      const fitsRight = speakFrom.x + girth * 0.5 + bw < W;
+      const fitsLeft = speakFrom.x - girth * 0.5 - bw > 0;
+      if (sided > 0 && !fitsRight && fitsLeft) sided = -1;
+      else if (sided < 0 && !fitsLeft && fitsRight) sided = 1;
+      const side = sided;
+
       // hang the balloon so its tail ends at the dancer
-      const side = speakFrom.x + girth * 0.5 + bw < W ? 1 : -1;
       const tipX = at.x + side * girth * 0.45;
       const room = bw * 1.05;  // the balloon swells as it springs in and breathes
-      const originX = side > 0
+      const wanted = side > 0
         ? Math.max(0, Math.min(W - room, tipX - BALLOON.tipX * scale))
         : Math.max(room, Math.min(W, tipX + BALLOON.tipX * scale));
+
+      // Glide the balloon's own middle, not the corner the shape hangs off:
+      // that corner swaps sides with the mirror, and easing it would still
+      // leave the balloon itself jumping the width of its oval.
+      const middle = wanted + side * BALLOON.cx * scale;
+      if (placedX === null || reduced.matches) placedX = middle;
+      else placedX += (middle - placedX) * Math.max(0, Math.min(1, frameDt * 6));
+      const originX = placedX - side * BALLOON.cx * scale;
       // never flush with the top edge, bob and swell included
       const originY = Math.max(H * 0.012 + 8 * scale, at.y - BALLOON.tipY * scale);
 
