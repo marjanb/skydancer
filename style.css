@@ -437,6 +437,10 @@ textarea {
 .toggle input:checked { background: var(--accent); }
 .toggle input:checked::after { transform: translateX(19px); }
 
+/* a lone dancer has nothing to differ from, so the switch sits this one out */
+.toggle.off { opacity: 0.45; }
+.toggle.off input { cursor: not-allowed; }
+
 /* ---- buttons ---- */
 
 /* chunky: they sit on a lip that squashes when pressed */

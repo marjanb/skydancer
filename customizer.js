@@ -122,8 +122,19 @@ const copyTag = document.getElementById('copy-tag');
 const pct = v => `${Math.round(v * 100)}%`;
 const FORMATS = { height: pct, 'arm-length': pct, girth: String, count: String };
 
+// a lone dancer has nothing to differ from, so the toggle is only live
+// once there is a crowd
+const variety = document.querySelector('[data-key="variety"]');
+const countInput = document.querySelector('[data-key="count"]');
+
+function syncVariety() {
+  variety.disabled = +countInput.value < 2;
+  variety.closest('label').classList.toggle('off', variety.disabled);
+}
+
 function apply(el) {
   dancer.setAttribute(el.dataset.key, String(readInput(el)));
+  if (el === countInput) syncVariety();
   const readout = el.closest('label').querySelector('output');
   if (readout) readout.value = (FORMATS[el.dataset.key] || (v => `${v.toFixed(2)}×`))(readInput(el));
   // don't yank the text out from under someone mid-type
@@ -135,6 +146,7 @@ function apply(el) {
     .filter(input => !(input.dataset.key === 'count' && +input.value === 1))
     .filter(input => !(input.dataset.key === 'sign' && !input.value.trim()))
     .filter(input => !(input.dataset.key === 'closable' && input.checked))
+    .filter(input => !(input.dataset.key === 'variety' && !input.checked))
     .map(input => `${input.dataset.key}="${escapeAttr(readInput(input))}"`).join(' ');
   embedScript.value = `<script src="${CDN_URL}"></script>`;
   // don't rewrite the box someone is typing or pasting into
@@ -175,6 +187,7 @@ for (const el of inputs) {
   apply(el);
   el.addEventListener('input', () => { apply(el); save(); });
 }
+syncVariety();
 
 // a value the control can't hold would land on a clamped slider or an empty
 // select, so fall back the way the widget itself does
@@ -225,7 +238,12 @@ for (const field of document.querySelectorAll('.hex')) {
 
 document.getElementById('randomize').addEventListener('click', () => {
   for (const el of inputs) {
-    if (el.type === 'checkbox') el.checked = Math.random() < 0.7;
+    // count comes before variety in the DOM, so its apply() has already
+    // settled whether the toggle is live by the time we get here. Only that
+    // one is ever disabled, so only that one is held back.
+    if (el.type === 'checkbox') {
+      el.checked = Math.random() < 0.7 && !(el === variety && variety.disabled);
+    }
     else if (el.type === 'range') el.value = +el.min + Math.random() * (el.max - el.min);
     else if (el.type === 'color') el.value = `#${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, '0')}`;
     else if (el.tagName === 'SELECT') el.selectedIndex = Math.floor(Math.random() * el.options.length);

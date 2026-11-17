@@ -20,6 +20,7 @@
     face: 'happy',    // happy | surprised | cool
     hair: true,
     count: 1,         // how many dancers stand together
+    variety: false,   // give a crowd a colour and a face each, instead of one look
     sign: '',         // words in a speech bubble by the dancer; empty for none
     bubble: 'drawn',  // drawn | box | burst
     closable: true,   // a dismiss button on the balloon; false leaves it to the page
@@ -168,6 +169,36 @@
     return { h: h * 60, s: span / (1 - Math.abs(2 * l - 1)) * 100, l: l * 100 };
   }
 
+  const FACES = ['happy', 'surprised', 'cool'];
+
+  // What a varied crowd differs by, beyond its turn round the hue wheel. The
+  // first line is all ones, so the first dancer is exactly what the page asked
+  // for and the rest fan out from it.
+  const VARIETY = [
+    { girth: 1,    arms: 1,    flail: 1,    hair: true  },
+    { girth: 1.24, arms: 0.78, flail: 0.84, hair: true  },
+    { girth: 0.82, arms: 1.26, flail: 1.2,  hair: false },
+    { girth: 1.12, arms: 0.9,  flail: 1.06, hair: true  },
+    { girth: 0.88, arms: 1.14, flail: 0.9,  hair: false },
+    { girth: 1.3,  arms: 1.04, flail: 1.22, hair: true  },
+  ];
+  const FATTEST = Math.max(...VARIETY.map(v => v.girth));
+  const spinCache = new Map();
+
+  // the same colour walked round the wheel, for telling a crowd apart
+  function spin(css, deg) {
+    if (!deg) return css;
+    const key = `${css}|${deg}`;
+    let out = spinCache.get(key);
+    if (!out) {
+      const { h, s, l } = hsl(css);
+      out = `hsl(${(h + deg) % 360} ${s}% ${l}%)`;
+      if (spinCache.size > 64) spinCache.clear();
+      spinCache.set(key, out);
+    }
+    return out;
+  }
+
   // the two inks a tube of this colour is lit and shaded with
   function inks(css) {
     let ink = inkCache.get(css);
@@ -259,20 +290,28 @@
 
     const count = () => Math.max(1, Math.min(MAX_COUNT, Math.round(cfg.count) || 1));
 
+    // the thickest tube on stage, as a multiple of the configured girth: the
+    // room left for a fan and the margin a tube is held inside both key off it
+    const fattest = () => (cfg.variety && count() > 1 ? FATTEST : 1);
+
     // height of the strip below the fan's base line: the ground, or just enough to show the whole fan
-    const ground = () => Math.ceil(cfg.girth * 0.25);
+    const ground = () => Math.ceil(cfg.girth * fattest() * 0.25);
 
     // The tube is held inside the canvas the way the ground already holds its
     // feet: a wild gust presses it against the edge instead of running past it,
     // so nothing is ever cut off, whatever the settings.
     function chain(x, y, a, n, segLen, bend) {
       const floor = H - ground();
-      const edge = cfg.girth * 0.62 + 8;  // half the tube, plus its outline
+      const edge = cfg.girth * fattest() * 0.62 + 8;  // half the tube, plus its outline
+      // The lid takes no allowance for the fattest tube. The tallest dancer's
+      // head already sits just under it, and widening it there would press the
+      // crown down onto the hair instead of letting it stand up.
+      const lid = cfg.girth * 0.62 + 8;
       const pts = [{ x, y, a }];
       for (let i = 1; i <= n; i++) {
         a += bend(i / n, a);
         x = Math.min(W - edge, Math.max(edge, x + Math.sin(a) * segLen));
-        y = Math.min(floor, Math.max(edge, y - Math.cos(a) * segLen));
+        y = Math.min(floor, Math.max(lid, y - Math.cos(a) * segLen));
         pts.push({ x, y, a });
       }
       return pts;
@@ -373,20 +412,45 @@
       const n = count();
       const gap = SPACING * H;
       // smallest first, so they read as standing further back
-      return Array.from({ length: n }, (_, i) =>
-        dancerAt(t + i * 3.7, W / 2 + (i - (n - 1) / 2) * gap, SIZES[i % SIZES.length]))
-        .sort((a, b) => a.girth - b.girth);
+      return Array.from({ length: n }, (_, i) => {
+        const look = lookOf(i, n);
+        const x = W / 2 + (i - (n - 1) / 2) * gap;
+        return { ...dancerAt(t + i * 3.7, x, SIZES[i % SIZES.length], look), look };
+      }).sort((a, b) => a.girth - b.girth);
+    }
+
+    // One crowd, one palette: the colours the page chose stay on the first
+    // dancer and the rest are walked evenly round the wheel, so a line-up
+    // reads as a set rather than as several unrelated widgets. Faces rotate
+    // from the chosen one for the same reason.
+    function lookOf(i, n) {
+      const plain = { color: cfg.color, accent: cfg.accent, face: cfg.face,
+                      girth: 1, arms: 1, flail: 1, hair: cfg.hair };
+      if (!cfg.variety || n < 2) return plain;
+      const mix = VARIETY[i % VARIETY.length];
+      const turn = i * 360 / n;
+      const first = Math.max(0, FACES.indexOf(cfg.face));
+      return {
+        color: spin(cfg.color, turn),
+        accent: spin(cfg.accent, turn),
+        face: FACES[(first + i) % FACES.length],
+        girth: mix.girth,
+        arms: mix.arms,
+        flail: mix.flail,
+        // a page that asked for no hair gets none, however mixed the crowd
+        hair: cfg.hair && mix.hair,
+      };
     }
 
     // one dancer, `k` times the configured size, standing at x
-    function dancerAt(t, x, k) {
+    function dancerAt(t, x, k, look) {
       // a sagging dancer loses some of its snap
       const limp = 0.55 + 0.45 * lift;
-      const w = cfg.wildness * (1 + punch * 2.5) * limp;
-      const girth = cfg.girth * k;
+      const w = cfg.wildness * (1 + punch * 2.5) * limp * look.flail;
+      const girth = cfg.girth * look.girth * k;
       // cap so tall settings in short widgets don't poke out of the top
       // as tall as the box allows, less room for its rounded head and hair
-      const height = (H - ground() - cfg.girth * 1.6) * k;
+      const height = (H - ground() - cfg.girth * look.girth * 1.6) * k;
       // The fabric is the same length whatever the pressure, so a sag bows the
       // tube over rather than shortening it: the head drops, the cloth stays.
       // It falls downwind, but still has to fall somewhere in dead calm.
@@ -400,17 +464,17 @@
 
       // start half a girth up so the round end cap stays hidden behind the fan
       const body = chain(x, H - ground() - girth / 2, 0, BODY_SEGS, height / BODY_SEGS, u =>
-        w * (0.05 * Math.sin(t * 2.1 - u * 5) + 0.035 * Math.sin(t * 3.7 - u * 9 + 1.3)) * (0.3 + u) + kinkBend(u, t) * limp + wind * 0.03 + droop);
+        w * (0.05 * Math.sin(t * 2.1 - u * 5) + 0.035 * Math.sin(t * 3.7 - u * 9 + 1.3)) * (0.3 + u) + kinkBend(u, t) * limp * look.flail + wind * 0.03 + droop);
 
       const shoulder = body[Math.round(BODY_SEGS * 0.66)];
       const arms = [-1, 1].map(side =>
         chain(shoulder.x, shoulder.y,
           shoulder.a + side * (1.1 + w * 0.4 * Math.sin(t * 2.6 + side)),
-          ARM_SEGS, height * cfg.armLength / ARM_SEGS, (v, a) =>
+          ARM_SEGS, height * cfg.armLength * look.arms / ARM_SEGS, (v, a) =>
             w * (0.12 * Math.sin(t * 4.3 - v * 6 + side * 2) + 0.08 * Math.sin(t * 6.1 - v * 10)) * (0.4 + v) + 0.12 * blow(a)));
 
       const top = body[BODY_SEGS];
-      const hair = !cfg.hair ? [] : [-2, -1, 0, 1, 2].map(j =>
+      const hair = !look.hair ? [] : [-2, -1, 0, 1, 2].map(j =>
         chain(top.x, top.y, top.a + j * 0.3, HAIR_SEGS, girth * 0.14, (v, a) =>
           w * 0.25 * Math.sin(t * 9 - v * 4 + j * 1.7) + 0.5 * blow(a)));
 
@@ -465,13 +529,13 @@
       strokeChain(pts, width, depthShade);
     }
 
-    function drawFace(p, g, t) {
+    function drawFace(p, g, t, face) {
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.a);
       ctx.fillStyle = OUTLINE;
 
-      if (cfg.face === 'cool') {
+      if (face === 'cool') {
         ctx.beginPath();
         ctx.roundRect(-g * 0.4, -g * 0.22, g * 0.36, g * 0.22, g * 0.06);
         ctx.roundRect(g * 0.04, -g * 0.22, g * 0.36, g * 0.22, g * 0.06);
@@ -492,10 +556,10 @@
       }
 
       ctx.beginPath();
-      if (cfg.face === 'surprised') {
+      if (face === 'surprised') {
         ctx.ellipse(0, g * 0.22, g * 0.1, g * 0.14, 0, 0, Math.PI * 2);
         ctx.fill();
-      } else if (cfg.face === 'cool') {
+      } else if (face === 'cool') {
         ctx.arc(g * 0.05, g * 0.1, g * 0.2, 0.2, Math.PI * 0.75);
         ctx.lineWidth = g * 0.05;
         ctx.strokeStyle = OUTLINE;
@@ -679,12 +743,12 @@
       depthShade.addColorStop(0, `rgba(0,0,0,${GROUNDED})`);
       depthShade.addColorStop(1, 'rgba(0,0,0,0)');
 
-      for (const { body, arms, hair, girth, x, t } of dancers) {
+      for (const { body, arms, hair, girth, x, t, look } of dancers) {
         for (const strand of hair) strokeChain(strand, girth * 0.1 + 4, OUTLINE);
-        for (const strand of hair) strokeChain(strand, girth * 0.1, cfg.accent);
-        for (const arm of arms) drawTube(arm, girth * 0.38, cfg.accent);
-        drawTube(body, girth, cfg.color);
-        drawFace(body[Math.round(BODY_SEGS * 0.87)], girth, t);
+        for (const strand of hair) strokeChain(strand, girth * 0.1, look.accent);
+        for (const arm of arms) drawTube(arm, girth * 0.38, look.accent);
+        drawTube(body, girth, look.color);
+        drawFace(body[Math.round(BODY_SEGS * 0.87)], girth, t, look.face);
         drawFan(x, girth);
       }
 

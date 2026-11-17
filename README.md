@@ -27,6 +27,7 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `face`       | `happy`   | `happy`, `surprised` or `cool`             |
 | `hair`       | `true`    | `false` hides the hair                     |
 | `count`      | `1`       | how many dancers stand together (max 6)    |
+| `variety`    | `false`   | `true` gives each dancer in a crowd its own colour, face, girth, arms and hair |
 | `sign`       | none      | words in a speech bubble by the dancer     |
 | `bubble`     | `drawn`   | bubble shape: `drawn`, `box` or `burst`    |
 | `closable`   | `true`    | `false` drops the balloon's dismiss button |
