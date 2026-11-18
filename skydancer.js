@@ -17,7 +17,7 @@
     speed: 1,
     wildness: 1,
     wind: 1,          // 0 = calm; scales pointer wind and gusts
-    face: 'happy',    // happy | surprised | cool
+    face: 'happy',    // happy | surprised | cool | wink | joy | sleepy | angry
     hair: true,
     count: 1,         // how many dancers stand together
     variety: false,   // give a crowd a colour and a face each, instead of one look
@@ -185,7 +185,17 @@
   // semicircle, so a flatter top than that has to be cut and re-edged.
   const FLAT = 0.55;
 
-  const FACES = ['happy', 'surprised', 'cool'];
+  // A face is a pairing of eyes and a mouth, so the two can be mixed freely.
+  const LOOKS = {
+    happy:     { eyes: 'round',  mouth: 'smile' },
+    surprised: { eyes: 'round',  mouth: 'gape' },
+    cool:      { eyes: 'shades', mouth: 'smirk' },
+    wink:      { eyes: 'wink',   mouth: 'smile' },
+    joy:       { eyes: 'arches', mouth: 'grin' },
+    sleepy:    { eyes: 'shut',   mouth: 'small' },
+    angry:     { eyes: 'brows',  mouth: 'frown' },
+  };
+  const FACES = Object.keys(LOOKS);
 
   // What a varied crowd differs by, beyond its turn round the hue wheel. The
   // first line is all ones, so the first dancer is exactly what the page asked
@@ -624,20 +634,16 @@
     // far cap, back along the other, round the near one. Clipping the bands to
     // it is what lets them run out to the domed ends instead of stopping short
     // in rounded tips of their own.
-    // `flat` squashes the far cap toward the tube, so the head can sit lower
-    // than the semicircle a round line cap gives.
+    // `flat` squashes the far cap toward the tube, to match a hand-drawn dome
     function tubePath(pts, width, flat = 1) {
       const r = width / 2;
-      const dome = r * flat;
       const first = pts[0], last = pts[pts.length - 1];
       const path = new Path2D();
       pts.forEach((p, i) => {
         const x = p.x + Math.cos(p.a) * r, y = p.y + Math.sin(p.a) * r;
         if (i) path.lineTo(x, y); else path.moveTo(x, y);
       });
-      // the cap's reach along the tube is the only thing `flat` touches; its
-      // width across the tube still has to meet the sides
-      path.ellipse(last.x, last.y, r, dome, last.a, 0, -Math.PI, true);
+      path.ellipse(last.x, last.y, r, r * flat, last.a, 0, -Math.PI, true);
       for (let i = pts.length - 1; i >= 0; i--) {
         const p = pts[i];
         path.lineTo(p.x - Math.cos(p.a) * r, p.y - Math.sin(p.a) * r);
@@ -647,25 +653,43 @@
       return path;
     }
 
+    // The flattened cap, painted rather than clipped. Clipping it meant a
+    // half-plane in front of the tip, which swallowed whatever part of a
+    // bowed-over body curled past that plane, outline and all.
+    function fillDome(at, rx, ry, style) {
+      ctx.beginPath();
+      ctx.ellipse(at.x, at.y, rx, ry, at.a, 0, -Math.PI, true);
+      ctx.closePath();
+      ctx.fillStyle = style;
+      ctx.fill();
+    }
+
     function drawTube(pts, width, color, flat = 1) {
       const end = pts[pts.length - 1];
-      // A round line cap gives a semicircle and nothing else, so a flatter top
-      // is made by trimming: everything below is drawn inside a silhouette
-      // whose far cap is squashed, and the outline is laid back along the new
-      // edge afterwards. The clip is padded so it only ever bites at that cap,
-      // never at the outside of a bend, where its square corners would notch
-      // the outline.
+      const r = width / 2;
       const trimming = flat < 1;
+      // A butt cap squares off both ends, so the foot would stop short of
+      // where its round cap used to reach and the fan would no longer hide
+      // the join. The outline is the wider of the two strokes and reached
+      // furthest, so the foot is carried down by its half-width.
+      const first = pts[0];
+      const foot = r + 3;
+      const stroke = trimming
+        ? [{ x: first.x - Math.sin(first.a) * foot,
+             y: first.y + Math.cos(first.a) * foot, a: first.a }, ...pts]
+        : pts;
+      // A round line cap can only be a semicircle, so a flatter end is drawn
+      // instead of stroked: the tube stops square and the dome goes on by
+      // hand, outline first and fill over it. The far end is the only one that
+      // shows -- the near one stands behind the fan.
+      if (trimming) ctx.lineCap = 'butt';
+      strokeChain(stroke, width + 6, OUTLINE);
+      strokeChain(stroke, width, color);
       if (trimming) {
-        ctx.save();
-        // Cut at the outline's own silhouette, squashed. Any wider and the cut
-        // would land above what the replacement edge below covers, stranding a
-        // band of the round outline inside the head.
-        ctx.clip(tubePath(pts, width + 6, flat));
+        ctx.lineCap = 'round';
+        fillDome(end, r + 3, r * flat + 3, OUTLINE);
+        fillDome(end, r, r * flat, color);
       }
-
-      strokeChain(pts, width + 6, OUTLINE);
-      strokeChain(pts, width, color);
 
       // The bands tile the width: each covers about its own slice, overlapping
       // its neighbour only enough to leave no seam, so the steps stay crisp.
@@ -686,64 +710,107 @@
       }
       ctx.restore();
 
-      // inside the trim, or its round cap would show above the flattened head
-      // whenever a sag drops the head into the shaded band
-      strokeChain(pts, width, depthShade);
-
+      // less light reaches the bottom of the tube, which plants it on the ground
       if (trimming) {
-        ctx.restore();
-        // The outline along the cut, since the round one was trimmed off. It
-        // rides half its own width outside the dome, the way the tube's
-        // outline sits outside the tube, or it would read twice as thick here
-        // as it does down the sides.
-        ctx.beginPath();
-        ctx.ellipse(end.x, end.y, width / 2 + 1.5, width / 2 * flat + 1.5,
-                    end.a, 0, -Math.PI, true);
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = OUTLINE;
-        ctx.stroke();
+        ctx.lineCap = 'butt';
+        strokeChain(stroke, width, depthShade);
+        ctx.lineCap = 'round';
+        fillDome(end, r, r * flat, depthShade);
+      } else {
+        strokeChain(pts, width, depthShade);
       }
     }
 
-    function drawFace(p, g, t, face) {
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(p.a);
-      ctx.fillStyle = OUTLINE;
+    // An eye sits this far either side of the middle, on this line.
+    const EYE_X = 0.2, EYE_Y = -0.1;
 
-      if (face === 'cool') {
+    // a lid drawn as a curve: `bulge` up for a smiling eye, down for a shut one
+    function lid(g, side, bulge) {
+      const r = g * 0.12;
+      ctx.beginPath();
+      ctx.arc(side * g * EYE_X, g * EYE_Y - bulge * r * 0.5, r,
+              bulge > 0 ? Math.PI * 1.25 : Math.PI * 0.25,
+              bulge > 0 ? Math.PI * 1.75 : Math.PI * 0.75);
+      ctx.lineWidth = g * 0.05;
+      ctx.strokeStyle = OUTLINE;
+      ctx.stroke();
+    }
+
+    function openEye(g, side, glance) {
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(side * g * EYE_X, g * EYE_Y, g * 0.13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = OUTLINE;
+      ctx.beginPath();
+      ctx.arc(side * g * EYE_X + glance, g * EYE_Y, g * 0.06, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawEyes(g, t, kind) {
+      if (kind === 'shades') {
+        ctx.fillStyle = OUTLINE;
         ctx.beginPath();
         ctx.roundRect(-g * 0.4, -g * 0.22, g * 0.36, g * 0.22, g * 0.06);
         ctx.roundRect(g * 0.04, -g * 0.22, g * 0.36, g * 0.22, g * 0.06);
         ctx.rect(-g * 0.06, -g * 0.19, g * 0.12, g * 0.05);
         ctx.fill();
-      } else {
-        const look = Math.sin(t * 1.3) * g * 0.03;
+        return;
+      }
+      // the eyes drift side to side, so it reads as looking about
+      const glance = Math.sin(t * 1.3) * g * 0.03;
+      for (const side of [-1, 1]) {
+        if (kind === 'arches') lid(g, side, 1);
+        else if (kind === 'shut') lid(g, side, -1);
+        else if (kind === 'wink' && side > 0) lid(g, side, 1);
+        else openEye(g, side, glance);
+      }
+      if (kind === 'brows') {
+        // two lines slanting in toward the nose, which is the whole of a scowl
+        ctx.lineWidth = g * 0.055;
+        ctx.strokeStyle = OUTLINE;
         for (const side of [-1, 1]) {
-          ctx.fillStyle = '#fff';
           ctx.beginPath();
-          ctx.arc(side * g * 0.2, -g * 0.1, g * 0.13, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = OUTLINE;
-          ctx.beginPath();
-          ctx.arc(side * g * 0.2 + look, -g * 0.1, g * 0.06, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.moveTo(side * g * 0.34, -g * 0.32);
+          ctx.lineTo(side * g * 0.08, -g * 0.2);
+          ctx.stroke();
         }
       }
+    }
 
+    function drawMouth(g, kind) {
+      ctx.fillStyle = OUTLINE;
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = g * 0.05;
       ctx.beginPath();
-      if (face === 'surprised') {
+      if (kind === 'gape') {
         ctx.ellipse(0, g * 0.22, g * 0.1, g * 0.14, 0, 0, Math.PI * 2);
         ctx.fill();
-      } else if (face === 'cool') {
+      } else if (kind === 'smirk') {
         ctx.arc(g * 0.05, g * 0.1, g * 0.2, 0.2, Math.PI * 0.75);
-        ctx.lineWidth = g * 0.05;
-        ctx.strokeStyle = OUTLINE;
+        ctx.stroke();
+      } else if (kind === 'grin') {
+        ctx.arc(0, g * 0.08, g * 0.3, 0, Math.PI);
+        ctx.fill();
+      } else if (kind === 'small') {
+        ctx.ellipse(0, g * 0.2, g * 0.07, g * 0.05, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (kind === 'frown') {
+        ctx.arc(0, g * 0.34, g * 0.2, Math.PI, Math.PI * 2);
         ctx.stroke();
       } else {
         ctx.arc(0, g * 0.12, g * 0.24, 0, Math.PI);
         ctx.fill();
       }
+    }
+
+    function drawFace(p, g, t, face) {
+      const { eyes, mouth } = LOOKS[face] || LOOKS.happy;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.a);
+      drawEyes(g, t, eyes);
+      drawMouth(g, mouth);
       ctx.restore();
     }
 
