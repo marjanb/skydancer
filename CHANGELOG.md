@@ -4,7 +4,7 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
-## Unreleased
+## v2.7.0 — 2026-11-18
 
 - `deflate()` and `inflate()` let a page flop a dancer and stand it back up,
   the counterpart to `cheer()`. It stays on show either way.
