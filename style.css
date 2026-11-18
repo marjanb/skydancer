@@ -229,6 +229,19 @@ h1, h2, button, .mark { font-family: Fredoka, Nunito, system-ui, sans-serif; }
 
 .field { display: flex; flex-direction: column; gap: 7px; }
 
+/* The crowd size and the switch that mixes it up are one setting in two
+   parts -- the switch does nothing until there is more than one dancer -- so
+   they are boxed together rather than left to read as unrelated. */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--tint) 7%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--tint) 20%, transparent);
+  border-radius: var(--r);
+}
+
 .head {
   display: flex;
   align-items: center;
