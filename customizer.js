@@ -290,6 +290,25 @@ for (const field of document.querySelectorAll('.hex')) {
   field.addEventListener('blur', () => { field.value = picker.value.toUpperCase(); });
 }
 
+// Everything back to the widget's own defaults, including the size, where the
+// dancer stands and the link, so there is a way home from a surprise or from a
+// link that carried something odd.
+document.getElementById('reset').addEventListener('click', () => {
+  // a dismissed dancer comes back first: it has no size to be centred by
+  // while it is hidden, and "the default dancer" is one you can see
+  dancer.show();
+  showStageBar(true);
+  dancerSize.value = dancerSize.defaultValue;   // the value the markup carries
+  spot.x = spot.y = null;   // placeDancer stands it in the middle again
+  placeDancer();
+  for (const el of inputs) {
+    writeInput(el, DEFAULTS[cfgKey(el.dataset.key)]);
+    apply(el);              // the first of these carries the height too
+  }
+  syncVariety();
+  save();
+});
+
 document.getElementById('randomize').addEventListener('click', () => {
   for (const el of inputs) {
     // count comes before variety in the DOM, so its apply() has already

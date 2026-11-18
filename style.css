@@ -412,6 +412,10 @@ textarea {
 }
 .hex:focus { color: var(--text); border-color: var(--accent); }
 
+/* a button carrying only an icon wants to stay square, not stretch to the
+   width of the words it hasn't got */
+.ghost.icon { padding: 7px 8px; }
+
 /* ---- switches ---- */
 
 .toggle {
