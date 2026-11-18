@@ -34,6 +34,11 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 
 The `sign` attribute puts words in a hand-drawn speech balloon beside the dancer's head. It drifts rather than tracking the head, so the words stay readable.
 
+The canvas is marked `aria-hidden`, since it is decoration. The sign's words
+are mirrored into a visually hidden element, so a screen reader, the page's own
+find and a translator can all reach them, and the dismiss button is a real
+`<button>` you can tab to.
+
 The balloon carries a dismiss button. Clicking it fires a bubbling, cancelable `close` event and then hides the widget; call `preventDefault()` on that event to handle it yourself, or set `closable="false"` to drop the button.
 
 To show and hide a dancer, call `hide()` and `show()` on the element, or set the standard `hidden` property:

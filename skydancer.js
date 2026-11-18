@@ -240,6 +240,7 @@
     /* width follows height, so the embed crops to the dancer */
     :host {
       display: inline-block;
+      position: relative;   /* the words and the dismiss button hang off this */
       vertical-align: middle;
       height: 400px;
       aspect-ratio: calc(${CROP_RATIO} + (var(--count, 1) - 1) * ${SPACING});
@@ -250,6 +251,32 @@
       width: 100%;
       height: 100%;
       /* no backdrop of its own: it stands on whatever the page puts behind it */
+    }
+    /* The sign's words, for anything that reads rather than looks: a screen
+       reader, the page's own find, a translator. The canvas only paints them. */
+    .said {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    /* Sits exactly over the dismiss button painted on the canvas. It carries
+       no look of its own -- the circle underneath is the look -- it is there so
+       a pointer and a keyboard have the same thing to reach for. */
+    .dismiss {
+      position: absolute;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: none;
+      cursor: pointer;
+    }
+    .dismiss:focus-visible {
+      outline: 2px solid ${OUTLINE};
+      outline-offset: 2px;
     }
   `;
 
@@ -338,29 +365,56 @@
       const half = canvas.clientWidth / 2;  // offsetX is in CSS px, not drawing units
       pointerWind = Math.max(-1, Math.min(1, (e.offsetX - half) / half));
     }, { signal: events.signal });
-    canvas.addEventListener('pointerleave', () => { pointerWind = 0; }, { signal: events.signal });
+    canvas.addEventListener('pointerleave', e => {
+      // the dismiss button lies over the canvas, so moving onto it counts as
+      // leaving: the pointer is still on the widget, and the wind should hold
+      if (e.relatedTarget === dismiss) return;
+      pointerWind = 0;
+    }, { signal: events.signal });
 
     // poking it knocks the air out: a kink now, and extra flailing that fades
     let punch = 0;
     let closeAt = null;  // the balloon's dismiss button, in drawing units
 
-    canvas.addEventListener('pointerdown', e => {
-      const unit = canvas.clientHeight / REF_HEIGHT;
-      if (closeAt && unit && e.button === 0) {  // a right-click shouldn't dismiss it
-        const dx = e.offsetX / unit - closeAt.x, dy = e.offsetY / unit - closeAt.y;
-        if (dx * dx + dy * dy <= closeAt.r * closeAt.r) {
-          const host = canvas.getRootNode().host;
-          // the page can take the dismissal over with preventDefault
-          if (host.dispatchEvent(new CustomEvent('close', { bubbles: true, cancelable: true }))) {
-            host.hidden = true;  // the loop stops with it
-          }
-          return;
-        }
+    const root = canvas.getRootNode();
+    const saidText = root.querySelector('.said');
+    const dismiss = root.querySelector('.dismiss');
+
+    dismiss.addEventListener('click', () => {
+      const host = root.host;
+      // the page can take the dismissal over with preventDefault
+      if (host.dispatchEvent(new CustomEvent('close', { bubbles: true, cancelable: true }))) {
+        host.hidden = true;  // the loop stops with it
       }
+    }, { signal: events.signal });
+
+    canvas.addEventListener('pointerdown', () => {
       if (reduced.matches) return;  // nothing would decay the punch without a loop
       punch = 1;
       kink = { start: t, dur: 0.9, dir: Math.random() < 0.5 ? -1 : 1, mag: 0.45 };
     }, { signal: events.signal });
+
+    // The words only reach the DOM when they change: this runs every frame.
+    let announced = null;
+    function announce(text) {
+      if (text === announced) return;
+      announced = text;
+      saidText.textContent = text;
+      saidText.hidden = !text;
+    }
+
+    // Keep the real button over the painted one. closeAt is in drawing units
+    // and the balloon drifts, so this follows it frame by frame.
+    function placeDismiss() {
+      const unit = canvas.clientHeight / REF_HEIGHT;
+      if (!closeAt || !unit) { dismiss.hidden = true; return; }
+      const r = closeAt.r * unit;
+      dismiss.hidden = false;
+      dismiss.style.left = `${closeAt.x * unit - r}px`;
+      dismiss.style.top = `${closeAt.y * unit - r}px`;
+      dismiss.style.width = `${r * 2}px`;
+      dismiss.style.height = `${r * 2}px`;
+    }
 
     function updateWind(t, dt) {
       if (t > gust.start + gust.dur) {
@@ -796,6 +850,9 @@
         drift.y += (mid.y - drift.y) * ease;
         drawBubble(drift, mid, Math.max(...dancers.map(d => d.girth)), sign);
       }
+      // what the canvas just painted, said again for anything that can't see it
+      announce(sign);
+      placeDismiss();
     }
 
     // ---- loop ----
@@ -860,7 +917,13 @@
       super();
       this.cfg = Object.fromEntries(KEYS.map(key => [key, parse(key, this.getAttribute(attrName(key)))]));
       const root = this.attachShadow({ mode: 'open' });
-      root.innerHTML = `<style>${STYLE}</style><canvas></canvas>`;
+      root.innerHTML = `<style>${STYLE}</style>`
+        // The canvas is decoration, so assistive tech is told to skip it. What
+        // it paints that is actually content -- the words on the sign, and the
+        // button that dismisses them -- gets a real element of its own.
+        + `<canvas aria-hidden="true"></canvas>`
+        + `<p class="said" hidden></p>`
+        + `<button class="dismiss" type="button" aria-label="Dismiss" hidden></button>`;
       this.canvas = root.querySelector('canvas');
     }
 
