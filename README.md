@@ -33,6 +33,7 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `sign`       | none      | words in a speech bubble; divide several with `\|` and it works through them, 4s each. `\|\|` is a literal pipe |
 | `bubble`     | `drawn`   | bubble shape: `drawn`, `box` or `burst`    |
 | `closable`   | `true`    | `false` drops the balloon's dismiss button |
+| `href`       | none      | where a click on the dancer leads, in a new tab; it also becomes a link that can be tabbed to |
 
 The `sign` attribute puts words in a hand-drawn speech balloon beside the dancer's head. It drifts rather than tracking the head, so the words stay readable.
 

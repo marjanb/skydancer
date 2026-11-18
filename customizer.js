@@ -200,6 +200,7 @@ function apply(el) {
     // leave out anything already at the widget's own default
     .filter(input => !(input.dataset.key === 'count' && +input.value === 1))
     .filter(input => !(input.dataset.key === 'sign' && !input.value.trim()))
+    .filter(input => !(input.dataset.key === 'href' && !input.value.trim()))
     .filter(input => !(input.dataset.key === 'closable' && input.checked))
     .filter(input => !(input.dataset.key === 'variety' && !input.checked))
     .map(input => `${input.dataset.key}="${escapeAttr(readInput(input))}"`).join(' ');
@@ -253,9 +254,24 @@ writeShareLink();
 
 // a value the control can't hold would land on a clamped slider or an empty
 // select, so fall back the way the widget itself does
+// the schemes the widget will actually follow; anything else is not a link
+const GOES = ['http:', 'https:', 'mailto:', 'tel:'];
+
+function linkable(text) {
+  if (!text.trim()) return true;   // no link at all is a fine answer
+  try {
+    return GOES.includes(new URL(text.trim(), location.href).protocol);
+  } catch {
+    return false;
+  }
+}
+
 function usable(el, value) {
   if (value === null || value === undefined) return false;
   const text = String(value);
+  // a shared link carries this one, so it must not seed a javascript: URL
+  // into the field and from there into someone's embed tag
+  if (el.type === 'url') return linkable(text);
   if (el.type === 'range') return text.trim() !== '' && Number.isFinite(Number(text));
   if (el.type === 'color') return parseHex(text) !== null;
   if (el.tagName === 'SELECT') return [...el.options].some(o => o.value === text);

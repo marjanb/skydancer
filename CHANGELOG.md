@@ -4,6 +4,19 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
+## Unreleased
+
+- A dancer fills with air when it first comes into view, and empties before it
+  goes when the balloon is dismissed.
+- `pattern` puts `rings` or a `spiral` on the body, in the accent colour.
+- `href` gives a dancer somewhere to lead. A click opens it in a new tab, and
+  it is a real link that can be tabbed to. Only `http`, `https`, `mailto` and
+  `tel` are followed — anything else is ignored, since the destination can
+  arrive from a page's templating or from a shared customizer link rather than
+  from whoever wrote the embed.
+- The eyes follow the pointer while it is over the dancer.
+- Customizer: a reset, and a link you can send someone.
+
 ## v2.5.0 — 2026-11-18
 
 - `paused` holds a dancer's pose without hiding it. A paused dancer still

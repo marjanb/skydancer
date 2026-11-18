@@ -23,6 +23,7 @@
     variety: false,   // give a crowd a colour and a face each, instead of one look
     paused: false,    // hold the pose; the dancer stays on show, it just stops
     pattern: 'none',  // markings on the body: none | rings | spiral
+    href: '',         // where a click on the dancer leads; empty for nowhere
     sign: '',         // words in a speech bubble by the dancer; empty for none
     bubble: 'drawn',  // drawn | box | burst
     closable: true,   // a dismiss button on the balloon; false leaves it to the page
@@ -280,6 +281,25 @@
       height: 100%;
       /* no backdrop of its own: it stands on whatever the page puts behind it */
     }
+    /* Where a click on the dancer leads. The canvas takes the click, but a
+       pointer is not the only way in, so the destination is a real link that
+       can be tabbed to and read out. */
+    .go {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      font: inherit;
+      color: inherit;
+    }
+    .go:not(:focus-visible) {
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    canvas.leads { cursor: pointer; }
+
     /* The sign's words, for anything that reads rather than looks: a screen
        reader, the page's own find, a translator. The canvas only paints them. */
     .said {
@@ -394,15 +414,22 @@
     let pointerWind = 0, wind = 0;
     let gust = { start: 4, dur: 2, force: 0.7 };
 
+    // where the pointer is, in drawing units, for the eyes to find
+    let gaze = null;
+
     canvas.addEventListener('pointermove', e => {
       const half = canvas.clientWidth / 2;  // offsetX is in CSS px, not drawing units
       pointerWind = Math.max(-1, Math.min(1, (e.offsetX - half) / half));
+      const unit = canvas.clientHeight / REF_HEIGHT;
+      gaze = unit ? { x: e.offsetX / unit, y: e.offsetY / unit } : null;
     }, { signal: events.signal });
-    canvas.addEventListener('pointerleave', e => {
-      // the dismiss button lies over the canvas, so moving onto it counts as
-      // leaving: the pointer is still on the widget, and the wind should hold
-      if (e.relatedTarget === dismiss) return;
+    // Watched on the widget rather than the canvas: the dismiss button and the
+    // link lie over the canvas, so moving onto either would read as leaving,
+    // and moving from one of them straight out would not read as leaving at
+    // all. The host's own bounds are what actually matter.
+    canvas.getRootNode().host.addEventListener('pointerleave', () => {
       pointerWind = 0;
+      gaze = null;   // nothing to watch, so the eyes go back to wandering
     }, { signal: events.signal });
 
     // poking it knocks the air out: a kink now, and extra flailing that fades
@@ -413,6 +440,67 @@
     const root = canvas.getRootNode();
     const saidText = root.querySelector('.said');
     const dismiss = root.querySelector('.dismiss');
+    const leadsTo = root.querySelector('.go');
+
+    // Somewhere a link may actually go. `javascript:` is the one that matters:
+    // the destination can reach this widget from a page's own templating or
+    // from the customizer's shareable link, so it is not always written by
+    // someone already able to run script here.
+    const GOES = ['http:', 'https:', 'mailto:', 'tel:'];
+
+    function destination() {
+      const raw = String(cfg.href ?? '').trim();
+      if (!raw) return '';
+      try {
+        const url = new URL(raw, location.href);   // so a relative path works
+        return GOES.includes(url.protocol) ? url.href : '';
+      } catch {
+        return '';
+      }
+    }
+
+    // A dancer with somewhere to go says so: the canvas takes the click, and
+    // the link carries the destination for a keyboard or a screen reader.
+    let aimed = null;
+
+    function aimLink() {
+      const href = destination();
+      if (href === aimed) return;   // this runs every frame
+      aimed = href;
+      leadsTo.hidden = !href;
+      canvas.classList.toggle('leads', !!href);
+      if (!href) return;
+      leadsTo.href = href;
+    }
+
+    // the words on the sign are what the link is pointing at, when there are
+    // any; written only when they change, like the hidden copy of them
+    let labelled = null;
+
+    function labelLink(sign) {
+      const label = sign || 'Find out more';
+      if (!aimed || label === labelled) return;
+      labelled = label;
+      leadsTo.textContent = label;
+    }
+
+    // The destination is worked out again rather than read off the element, so
+    // nothing can be slipped into it between the frame that set it and this.
+    // The link opens a tab by itself; the modifiers still ride along so that
+    // shift-click and the rest behave as they would anywhere, and the middle
+    // button is heard too.
+    function follow(e) {
+      if (!destination()) return;
+      leadsTo.dispatchEvent(new MouseEvent('click', {
+        bubbles: true, cancelable: true, view: window, button: e.button,
+        ctrlKey: e.ctrlKey, metaKey: e.metaKey,
+        shiftKey: e.shiftKey, altKey: e.altKey,
+      }));
+    }
+
+    canvas.addEventListener('click', follow, { signal: events.signal });
+    canvas.addEventListener('auxclick', e => { if (e.button === 1) follow(e); },
+                            { signal: events.signal });
 
     dismiss.addEventListener('click', () => {
       const host = root.host;
@@ -851,18 +939,34 @@
       ctx.stroke();
     }
 
-    function openEye(g, side, glance) {
+    function openEye(g, side, look) {
       ctx.fillStyle = '#fff';
       ctx.beginPath();
       ctx.arc(side * g * EYE_X, g * EYE_Y, g * 0.13, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = OUTLINE;
       ctx.beginPath();
-      ctx.arc(side * g * EYE_X + glance, g * EYE_Y, g * 0.06, 0, Math.PI * 2);
+      ctx.arc(side * g * EYE_X + look.x, g * EYE_Y + look.y, g * 0.06, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    function drawEyes(g, t, kind) {
+    // Which way the pupils sit. With a pointer on the canvas they follow it,
+    // which is the whole of looking alive; with none they wander. The head
+    // turns with the tube, so the direction is taken into its own frame.
+    function eyesOn(head, g, t) {
+      const wander = { x: Math.sin(t * 1.3) * g * 0.03, y: 0 };
+      if (!gaze) return wander;
+      const dx = gaze.x - head.x, dy = gaze.y - head.y;
+      const away = Math.hypot(dx, dy);
+      if (away < 1) return wander;   // right on the eyes, so nowhere to look
+      const reach = g * 0.05;
+      return {
+        x: (dx * Math.cos(head.a) + dy * Math.sin(head.a)) / away * reach,
+        y: (-dx * Math.sin(head.a) + dy * Math.cos(head.a)) / away * reach,
+      };
+    }
+
+    function drawEyes(g, t, kind, look) {
       if (kind === 'shades') {
         ctx.fillStyle = OUTLINE;
         ctx.beginPath();
@@ -872,13 +976,11 @@
         ctx.fill();
         return;
       }
-      // the eyes drift side to side, so it reads as looking about
-      const glance = Math.sin(t * 1.3) * g * 0.03;
       for (const side of [-1, 1]) {
         if (kind === 'arches') lid(g, side, 1);
         else if (kind === 'shut') lid(g, side, -1);
         else if (kind === 'wink' && side > 0) lid(g, side, 1);
-        else openEye(g, side, glance);
+        else openEye(g, side, look);
       }
       if (kind === 'brows') {
         // two lines slanting in toward the nose, which is the whole of a scowl
@@ -924,7 +1026,7 @@
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.a);
-      drawEyes(g, t, eyes);
+      drawEyes(g, t, eyes, eyesOn(p, g, t));
       drawMouth(g, mouth);
       ctx.restore();
     }
@@ -1129,6 +1231,8 @@
       // what the canvas just painted, said again for anything that can't see it
       announce(sign);
       placeDismiss();
+      aimLink();
+      labelLink(sign);
     }
 
     // ---- loop ----
@@ -1234,7 +1338,11 @@
         // button that dismisses them -- gets a real element of its own.
         + `<canvas aria-hidden="true"></canvas>`
         + `<p class="said" hidden></p>`
-        + `<button class="dismiss" type="button" aria-label="Dismiss" hidden></button>`;
+        + `<button class="dismiss" type="button" aria-label="Dismiss" hidden></button>`
+        // A new tab, so a click never takes the reader off the page the dancer
+        // is advertising. noopener keeps the opened page from reaching back
+        // through window.opener.
+        + `<a class="go" target="_blank" rel="noopener noreferrer" hidden></a>`;
       this.canvas = root.querySelector('canvas');
     }
 
