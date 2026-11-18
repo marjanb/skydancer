@@ -137,8 +137,8 @@
   // the saturation up on the way is what makes a flat colour look lively.
   const WARM = 50;           // hue the lit edge leans toward
   const COOL = 265;          // hue the shaded side leans toward
-  const RIM_LIGHT = 0.55;
-  const SHADE = 0.5;
+  const RIM_LIGHT = 0.38;
+  const SHADE = 0.34;
 
   // Whatever colour string the page handed us, the canvas resolves it. Reading
   // a 1x1 fill back is the one answer that does not depend on how the browser
