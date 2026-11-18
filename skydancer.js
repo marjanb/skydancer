@@ -22,6 +22,7 @@
     count: 1,         // how many dancers stand together
     variety: false,   // give a crowd a colour and a face each, instead of one look
     paused: false,    // hold the pose; the dancer stays on show, it just stops
+    pattern: 'none',  // markings on the body: none | rings | spiral
     sign: '',         // words in a speech bubble by the dancer; empty for none
     bubble: 'drawn',  // drawn | box | burst
     closable: true,   // a dismiss button on the balloon; false leaves it to the page
@@ -407,6 +408,7 @@
     // poking it knocks the air out: a kink now, and extra flailing that fades
     let punch = 0;
     let closeAt = null;  // the balloon's dismiss button, in drawing units
+    let going = false;   // dismissed, and seeing the air out
 
     const root = canvas.getRootNode();
     const saidText = root.querySelector('.said');
@@ -415,9 +417,21 @@
     dismiss.addEventListener('click', () => {
       const host = root.host;
       // the page can take the dismissal over with preventDefault
-      if (host.dispatchEvent(new CustomEvent('close', { bubbles: true, cancelable: true }))) {
-        host.hidden = true;  // the loop stops with it
+      // Out of reach from here on: the air takes a moment to go, and a second
+      // press in that moment would tell the page twice. placeDismiss puts the
+      // button back every frame, so it has to be told as well -- and a script
+      // can press a hidden button, so the flag is checked rather than trusted.
+      if (going) return;
+      going = true;
+      dismiss.hidden = true;
+      if (!host.dispatchEvent(new CustomEvent('close', { bubbles: true, cancelable: true }))) {
+        going = false;   // the page is handling it, so the button stays
+        return;
       }
+      // the loop stops with the host, so it has to keep going until the air
+      // is out; a held pose has no clock for that and simply goes
+      if (held()) host.hidden = true;
+      else breathe(pressure(), 0, EMPTY, () => { host.hidden = true; });
     }, { signal: events.signal });
 
     function burst() {
@@ -485,7 +499,7 @@
     // and the balloon drifts, so this follows it frame by frame.
     function placeDismiss() {
       const unit = canvas.clientHeight / REF_HEIGHT;
-      if (!closeAt || !unit) { dismiss.hidden = true; return; }
+      if (!closeAt || !unit || going) { dismiss.hidden = true; return; }
       const r = closeAt.r * unit;
       dismiss.hidden = false;
       dismiss.style.left = `${closeAt.x * unit - r}px`;
@@ -512,6 +526,35 @@
     // in the body for a moment, then fills again. `lift` is 1 at full height.
     let sag = { start: 6, dur: 1.1, depth: 0.4, side: 1 };
     let lift = 1;
+    // `slump` is the sag on its own and `filled` is how much air is in the
+    // tube. A sag bows the cloth over without shortening it; air really does
+    // change the length. `lift` is the two together, for how slack it all is.
+    let slump = 1, filled = 1;
+
+    // An arrival or a dismissal is the air going in or out: the tube fills
+    // from flat on the way in, and empties on the way out before it goes. Null
+    // when neither is happening, which is nearly always.
+    const FILL = 0.9, EMPTY = 0.55;   // seconds
+    let air = null;                   // { from, to, start, dur, then }
+
+    function breathe(from, to, dur, then) {
+      air = { from, to, start: wall, dur, then };
+    }
+
+    // how far the air has got, 0 flat to 1 full
+    function pressure() {
+      if (!air) return 1;
+      const p = (wall - air.start) / air.dur;
+      if (p >= 1) {
+        const { to, then } = air;
+        air = null;
+        then?.();
+        return to;
+      }
+      // eased, so it leaves and arrives without a jolt
+      const e = p < 0 ? 0 : 0.5 - Math.cos(Math.PI * p) / 2;
+      return air.from + (air.to - air.from) * e;
+    }
 
     function updateLift(t) {
       if (t > sag.start + sag.dur) {
@@ -523,7 +566,20 @@
         };
       }
       const p = (t - sag.start) / sag.dur;
-      lift = p < 0 || p > 1 ? 1 : 1 - sag.depth * Math.sin(Math.PI * p);  // down and straight back up
+      slump = p < 0 || p > 1 ? 1 : 1 - sag.depth * Math.sin(Math.PI * p);  // down and straight back up
+      filled = pressure();
+      lift = slump * filled;   // a half-filled tube is a slack one as well
+    }
+
+    // Whatever is part way in or out finishes at once. A held pose has no
+    // frames to breathe with, so without this a dancer paused mid-fill would
+    // stay half up, and one paused mid-dismissal would never go.
+    function settleAir() {
+      if (!air) return;
+      const { to, then } = air;
+      air = null;
+      filled = to;
+      then?.();
     }
 
     // bend that swings a loose chain (arm, hair) round to point downwind
@@ -584,9 +640,10 @@
       const girth = cfg.girth * look.girth * k;
       // cap so tall settings in short widgets don't poke out of the top
       // as tall as the box allows, less room for its rounded head and hair
-      const height = (H - ground() - cfg.girth * look.girth * 1.6) * k;
-      // The fabric is the same length whatever the pressure, so a sag bows the
-      // tube over rather than shortening it: the head drops, the cloth stays.
+      const height = (H - ground() - cfg.girth * look.girth * 1.6) * k * filled;
+      // A sag is a loss of pressure, not of cloth, so it bows the tube over
+      // rather than shortening it: the head drops, the fabric stays. Air
+      // going in or out is the other thing, and that does change the length.
       // It falls downwind, but still has to fall somewhere in dead calm.
       // one direction, never a tug-of-war: downwind, or the sag's own way in calm
       const blown = Math.abs(Math.tanh(wind * 4));
@@ -594,7 +651,7 @@
       const falls = dir * (blown + 0.6 * (1 - blown));
       // 0.042 keeps the worst case (deepest sag, full wind) inside a right
       // angle, past which the floor clamp would eat the tube's length
-      const droop = (1 - lift) * 0.042 * falls;
+      const droop = (1 - slump) * 0.042 * falls;
 
       // start half a girth up so the round end cap stays hidden behind the fan
       const body = chain(x, H - ground() - girth / 2, 0, BODY_SEGS, height / BODY_SEGS, u =>
@@ -676,7 +733,52 @@
       ctx.fill();
     }
 
-    function drawTube(pts, width, color, flat = 1) {
+    // Fabric markings, drawn on the bare colour so the shading goes over them
+    // and they catch the same light the tube does. Clipped by the caller.
+    //   rings   bands round the tube, the way a windsock is sewn
+    //   spiral  one stripe winding up it, like a barber's pole
+    function drawPattern(pts, width, kind, ink) {
+      const n = pts.length - 1;
+      ctx.strokeStyle = ink;
+
+      if (kind === 'rings') {
+        // Butt caps: a round one would add half the tube's width at each end
+        // of a band, and the rings would swell into blobs that meet.
+        ctx.lineCap = 'butt';
+        ctx.lineWidth = width;
+        for (let i = 3; i < n; i += 4) {
+          ctx.beginPath();
+          ctx.moveTo(pts[i].x, pts[i].y);
+          ctx.lineTo(pts[i + 1].x, pts[i + 1].y);
+          ctx.stroke();
+        }
+        ctx.lineCap = 'round';
+        return;
+      }
+
+      // A stripe wound round the tube: the angle climbs with the tube and the
+      // offset is its sine, so it sweeps across. Only the half turned toward
+      // us is drawn -- the rest is round the back -- so the path breaks every
+      // time it goes behind, which is what makes it read as wound rather than
+      // as a zigzag painted on the front.
+      if (kind !== 'spiral') return;   // an unknown marking is no marking
+      const TURNS = 3.2;
+      ctx.lineWidth = width * 0.26;
+      ctx.beginPath();
+      let drawing = false;
+      for (let i = 0; i <= n; i++) {
+        const turn = (i / n) * TURNS * Math.PI * 2;
+        const p = pts[i];
+        if (Math.cos(turn) <= 0) { drawing = false; continue; }   // round the back
+        const off = Math.sin(turn) * width * 0.5;
+        const x = p.x + Math.cos(p.a) * off, y = p.y + Math.sin(p.a) * off;
+        if (drawing) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+        drawing = true;
+      }
+      ctx.stroke();
+    }
+
+    function drawTube(pts, width, color, flat = 1, pattern = 'none', ink = color) {
       const end = pts[pts.length - 1];
       const r = width / 2;
       const trimming = flat < 1;
@@ -714,6 +816,7 @@
       // cut off exactly at the edge
       ctx.save();
       ctx.clip(tubePath(pts, width, flat));
+      if (pattern !== 'none') drawPattern(pts, width, pattern, ink);
       for (let i = 0; i < TONES; i++) {
         const ink = tones[i];
         if (!ink) continue;  // the base colour already stands for the middle
@@ -1002,7 +1105,7 @@
         for (const strand of hair) strokeChain(strand, girth * 0.1 + 4, OUTLINE);
         for (const strand of hair) strokeChain(strand, girth * 0.1, look.accent);
         for (const arm of arms) drawTube(arm, girth * 0.38, look.accent);
-        drawTube(body, girth, look.color, FLAT);
+        drawTube(body, girth, look.color, FLAT, cfg.pattern, look.accent);
         drawFace(body[Math.round(BODY_SEGS * 0.87)], girth, t, look.face);
         drawFan(x, girth);
       }
@@ -1030,7 +1133,11 @@
 
     // ---- loop ----
 
-    let t = 0, last = performance.now(), raf, frameDt = 0, depthShade;
+    // `t` is the dance's own clock and runs at the configured speed; `wall` is
+    // plain seconds. Filling with air is a transition rather than part of the
+    // dance, so it goes by the wall: at speed="0" the dance stands still, but
+    // a dancer still has to finish arriving.
+    let t = 0, wall = 0, last = performance.now(), raf, frameDt = 0, depthShade;
 
     function render() { draw(simulate(t)); }
 
@@ -1040,6 +1147,7 @@
       frameDt = dt;
       last = now;
       t += dt * Math.max(0, cfg.speed);  // a negative speed would stall the scheduling
+      wall += dt;
       punch = Math.max(0, punch - dt * 0.7);
       // ResizeObserver misses a move to a screen with a different pixel density
       if ((window.devicePixelRatio || 1) !== lastDpr) resize();
@@ -1056,6 +1164,7 @@
       // way there is no loop, so the pose is drawn once and left.
       if (held()) {
         punch = 0;  // nothing will decay it while the pose is held
+        settleAir();    // no frames to breathe with, so finish it now
         updateLift(t);  // or the pose could be stuck mid-sag
         return render();
       }
@@ -1065,7 +1174,15 @@
 
     // only animate while on screen, so an embed scrolled out of view costs nothing
     const visibility = new IntersectionObserver(([entry]) => {
+      const coming = entry.isIntersecting && !visible;
       visible = entry.isIntersecting;
+      // A held pose has no clock to fill by, so it just stands there. One
+      // already part way in or out carries on from where it stopped: starting
+      // over would snap it flat, and replacing it would drop a dismissal.
+      if (coming && !held() && !air) {
+        going = false;   // shown again, so the button is back in play
+        breathe(0, 1, FILL);
+      }
       start();
     });
     visibility.observe(canvas);
