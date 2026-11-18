@@ -154,6 +154,18 @@
   const lean = (h, target, amount) =>
     (h + (((target - h + 540) % 360) - 180) * amount + 360) % 360;
 
+  // Whether the canvas can make sense of a colour at all. Setting fillStyle to
+  // something unreadable leaves the old value, so two different starting
+  // points that end up agreeing means it parsed.
+  function readable(css) {
+    swatch.fillStyle = '#000';
+    swatch.fillStyle = css;
+    const first = swatch.fillStyle;
+    swatch.fillStyle = '#fff';
+    swatch.fillStyle = css;
+    return first === swatch.fillStyle ? first : null;
+  }
+
   function hsl(css) {
     swatch.clearRect(0, 0, 1, 1);
     swatch.fillStyle = '#000';   // a colour the browser can't read leaves this
@@ -168,6 +180,10 @@
             : (r - g) / span + 4;
     return { h: h * 60, s: span / (1 - Math.abs(2 * l - 1)) * 100, l: l * 100 };
   }
+
+  // How much of a round cap the head keeps. A line cap can only be a
+  // semicircle, so a flatter top than that has to be cut and re-edged.
+  const FLAT = 0.55;
 
   const FACES = ['happy', 'surprised', 'cool'];
 
@@ -388,11 +404,51 @@
       }
     }, { signal: events.signal });
 
-    canvas.addEventListener('pointerdown', () => {
-      if (reduced.matches) return;  // nothing would decay the punch without a loop
+    function burst() {
+      // without a running loop nothing would decay the punch, so it would be
+      // saved up and spent the moment the dancer came back into view
+      if (reduced.matches || !visible) return;
       punch = 1;
       kink = { start: t, dur: 0.9, dir: Math.random() < 0.5 ? -1 : 1, mag: 0.45 };
-    }, { signal: events.signal });
+    }
+
+    canvas.addEventListener('pointerdown', burst, { signal: events.signal });
+
+    // A page can theme the dancer in CSS rather than in attributes, which is
+    // how it follows a light and a dark scheme without the embed being
+    // rewritten. An attribute still wins: naming a colour outright is the
+    // louder ask. Read on the events that can change it, never per frame --
+    // getComputedStyle in the loop would force a style recalc every tick.
+    const scheme = matchMedia('(prefers-color-scheme: dark)');
+    let themed = { color: null, accent: null };
+
+    function readTheme() {
+      const host = root.host;
+      const style = getComputedStyle(host);
+      const pick = key => {
+        if (host.hasAttribute(key)) return null;   // the tag said so outright
+        const set = style.getPropertyValue(`--sky-dancer-${key}`).trim();
+        return set ? readable(set) : null;
+      };
+      themed = { color: pick('color'), accent: pick('accent') };
+    }
+
+    // A sign can carry several phrases divided by a pipe, and the dancer works
+    // through them. Splitting is cached because this is read every frame; a
+    // still pose has no clock to turn the page, so it holds whichever phrase
+    // was up when the clock stopped.
+    const DWELL = 4;   // seconds a phrase stays up
+    let split = { raw: null, phrases: [] };
+
+    function phraseNow(t) {
+      const raw = String(cfg.sign ?? '');
+      if (raw !== split.raw) {
+        split = { raw, phrases: raw.split('|').map(x => x.trim()).filter(Boolean) };
+      }
+      const { phrases } = split;
+      if (phrases.length < 2) return phrases[0] ?? '';
+      return phrases[Math.floor(Math.max(0, t) / DWELL) % phrases.length];
+    }
 
     // The words only reach the DOM when they change: this runs every frame.
     let announced = null;
@@ -478,15 +534,17 @@
     // reads as a set rather than as several unrelated widgets. Faces rotate
     // from the chosen one for the same reason.
     function lookOf(i, n) {
-      const plain = { color: cfg.color, accent: cfg.accent, face: cfg.face,
+      const base = themed.color ?? cfg.color;
+      const accent = themed.accent ?? cfg.accent;
+      const plain = { color: base, accent, face: cfg.face,
                       girth: 1, arms: 1, flail: 1, hair: cfg.hair };
       if (!cfg.variety || n < 2) return plain;
       const mix = VARIETY[i % VARIETY.length];
       const turn = i * 360 / n;
       const first = Math.max(0, FACES.indexOf(cfg.face));
       return {
-        color: spin(cfg.color, turn),
-        accent: spin(cfg.accent, turn),
+        color: spin(base, turn),
+        accent: spin(accent, turn),
         face: FACES[(first + i) % FACES.length],
         girth: mix.girth,
         arms: mix.arms,
@@ -566,15 +624,20 @@
     // far cap, back along the other, round the near one. Clipping the bands to
     // it is what lets them run out to the domed ends instead of stopping short
     // in rounded tips of their own.
-    function tubePath(pts, width) {
+    // `flat` squashes the far cap toward the tube, so the head can sit lower
+    // than the semicircle a round line cap gives.
+    function tubePath(pts, width, flat = 1) {
       const r = width / 2;
+      const dome = r * flat;
       const first = pts[0], last = pts[pts.length - 1];
       const path = new Path2D();
       pts.forEach((p, i) => {
         const x = p.x + Math.cos(p.a) * r, y = p.y + Math.sin(p.a) * r;
         if (i) path.lineTo(x, y); else path.moveTo(x, y);
       });
-      path.arc(last.x, last.y, r, last.a, last.a - Math.PI, true);
+      // the cap's reach along the tube is the only thing `flat` touches; its
+      // width across the tube still has to meet the sides
+      path.ellipse(last.x, last.y, r, dome, last.a, 0, -Math.PI, true);
       for (let i = pts.length - 1; i >= 0; i--) {
         const p = pts[i];
         path.lineTo(p.x - Math.cos(p.a) * r, p.y - Math.sin(p.a) * r);
@@ -584,7 +647,23 @@
       return path;
     }
 
-    function drawTube(pts, width, color) {
+    function drawTube(pts, width, color, flat = 1) {
+      const end = pts[pts.length - 1];
+      // A round line cap gives a semicircle and nothing else, so a flatter top
+      // is made by trimming: everything below is drawn inside a silhouette
+      // whose far cap is squashed, and the outline is laid back along the new
+      // edge afterwards. The clip is padded so it only ever bites at that cap,
+      // never at the outside of a bend, where its square corners would notch
+      // the outline.
+      const trimming = flat < 1;
+      if (trimming) {
+        ctx.save();
+        // Cut at the outline's own silhouette, squashed. Any wider and the cut
+        // would land above what the replacement edge below covers, stranding a
+        // band of the round outline inside the head.
+        ctx.clip(tubePath(pts, width + 6, flat));
+      }
+
       strokeChain(pts, width + 6, OUTLINE);
       strokeChain(pts, width, color);
 
@@ -598,7 +677,7 @@
       // clipped to the tube, so each band can overrun both ends and still be
       // cut off exactly at the edge
       ctx.save();
-      ctx.clip(tubePath(pts, width));
+      ctx.clip(tubePath(pts, width, flat));
       for (let i = 0; i < TONES; i++) {
         const ink = tones[i];
         if (!ink) continue;  // the base colour already stands for the middle
@@ -607,8 +686,23 @@
       }
       ctx.restore();
 
-      // less light reaches the bottom of the tube, which plants it on the ground
+      // inside the trim, or its round cap would show above the flattened head
+      // whenever a sag drops the head into the shaded band
       strokeChain(pts, width, depthShade);
+
+      if (trimming) {
+        ctx.restore();
+        // The outline along the cut, since the round one was trimmed off. It
+        // rides half its own width outside the dome, the way the tube's
+        // outline sits outside the tube, or it would read twice as thick here
+        // as it does down the sides.
+        ctx.beginPath();
+        ctx.ellipse(end.x, end.y, width / 2 + 1.5, width / 2 * flat + 1.5,
+                    end.a, 0, -Math.PI, true);
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = OUTLINE;
+        ctx.stroke();
+      }
     }
 
     function drawFace(p, g, t, face) {
@@ -829,12 +923,12 @@
         for (const strand of hair) strokeChain(strand, girth * 0.1 + 4, OUTLINE);
         for (const strand of hair) strokeChain(strand, girth * 0.1, look.accent);
         for (const arm of arms) drawTube(arm, girth * 0.38, look.accent);
-        drawTube(body, girth, look.color);
+        drawTube(body, girth, look.color, FLAT);
         drawFace(body[Math.round(BODY_SEGS * 0.87)], girth, t, look.face);
         drawFan(x, girth);
       }
 
-      const sign = String(cfg.sign ?? '').trim();
+      const sign = phraseNow(t);
       closeAt = null;
       if (sign && dancers.length) {
         // one balloon for the lot of them, floating over the middle of the group
@@ -895,16 +989,33 @@
     });
     visibility.observe(canvas);
     reduced.addEventListener('change', start, { signal: events.signal });
+    scheme.addEventListener('change', () => { readTheme(); redrawStill(); },
+                            { signal: events.signal });
+    // Most pages swap themes by putting a class or a data-theme on <html>
+    // rather than by the colour-scheme query, so watch for that as well --
+    // otherwise the dancer keeps the colours it read at startup.
+    const themeWatch = new MutationObserver(() => { readTheme(); redrawStill(); });
+    themeWatch.observe(document.documentElement,
+                       { attributes: true, attributeFilter: ['class', 'style', 'data-theme'] });
+    readTheme();
     ready = true;
+
+    // a still pose has no loop to pick a change up, so it gets poked
+    function redrawStill() { if (ready && visible && reduced.matches) render(); }
 
     return {
       // only the still pose needs poking; the loop picks changes up on its own
-      redraw() { if (ready && visible && reduced.matches) render(); },
+      redraw: redrawStill,
+      // a colour attribute coming or going changes whether the page's own
+      // theme gets a say, so the answer has to be looked up again
+      rereadTheme: readTheme,
+      cheer: burst,
       stop() {
         visible = false;  // a late redraw() must not paint a detached canvas
         cancelAnimationFrame(raf);
         observer.disconnect();
         visibility.disconnect();
+        themeWatch.disconnect();
         events.abort();
       },
     };
@@ -931,6 +1042,9 @@
       const key = KEYS.find(k => attrName(k) === name);
       this.cfg[key] = parse(key, value);
       if (key === 'count' && this.isConnected) this.syncCount();
+      // reading the theme forces a style recalc, and only these two can change
+      // what it resolves to
+      if (key === 'color' || key === 'accent') this.anim?.rereadTheme();
       this.anim?.redraw();
     }
 
@@ -943,6 +1057,10 @@
     hide() { this.hidden = true; }
     show() { this.hidden = false; }
 
+    // Set it off: the same burst a poke gives it, for a page with something to
+    // celebrate. A still pose has no loop to carry it, so it stays still.
+    cheer() { this.anim?.cheer(); }
+
     connectedCallback() {
       this.syncCount();
       this.anim = animate(this.canvas, this.cfg);
@@ -950,6 +1068,7 @@
 
     disconnectedCallback() {
       this.anim.stop();
+      this.anim = null;   // the optional calls above cope, and nothing is held
     }
   }
 

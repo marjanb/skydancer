@@ -28,7 +28,7 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `hair`       | `true`    | `false` hides the hair                     |
 | `count`      | `1`       | how many dancers stand together (max 6)    |
 | `variety`    | `false`   | `true` gives each dancer in a crowd its own colour, face, girth, arms and hair |
-| `sign`       | none      | words in a speech bubble by the dancer     |
+| `sign`       | none      | words in a speech bubble; divide several with `\|` and it works through them, 4s each |
 | `bubble`     | `drawn`   | bubble shape: `drawn`, `box` or `burst`    |
 | `closable`   | `true`    | `false` drops the balloon's dismiss button |
 
@@ -38,6 +38,31 @@ The canvas is marked `aria-hidden`, since it is decoration. The sign's words
 are mirrored into a visually hidden element, so a screen reader, the page's own
 find and a translator can all reach them, and the dismiss button is a real
 `<button>` you can tab to.
+
+## Theming from CSS
+
+Leave `color` or `accent` off the tag and the dancer takes them from custom
+properties instead, so a page can dress it from its own stylesheet and follow a
+light and a dark scheme without the embed being rewritten:
+
+```css
+:root { --sky-dancer-color: #15803d; --sky-dancer-accent: #d7f000; }
+```
+
+An attribute wins over a custom property, and an unreadable value falls back to
+the default. The widget rereads them when the colour scheme changes, when
+`<html>` gains or loses a class or `data-theme`, and when a colour attribute is
+set, so a theme toggle reaches the dancer either way.
+
+## Scripting
+
+```js
+document.querySelector('sky-dancer').cheer();   // set it flailing
+```
+
+`cheer()` gives the same burst a poke does, for a page with something to
+celebrate. It does nothing on a dancer that is off screen or holding a still
+pose for `prefers-reduced-motion`, rather than saving the flail up.
 
 The balloon carries a dismiss button. Clicking it fires a bubbling, cancelable `close` event and then hides the widget; call `preventDefault()` on that event to handle it yourself, or set `closable="false"` to drop the button.
 
