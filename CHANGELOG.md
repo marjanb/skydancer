@@ -4,6 +4,12 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
+## Unreleased
+
+- `deflate()` and `inflate()` let a page flop a dancer and stand it back up,
+  the counterpart to `cheer()`. It stays on show either way.
+- Customizer: a redo to go with the undo, and Cmd/Ctrl+Z and Cmd+Shift+Z.
+
 ## v2.6.1 — 2026-11-18
 
 - Customizer: an undo that steps back up to five changes. A slider drag counts

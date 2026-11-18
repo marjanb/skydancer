@@ -60,12 +60,20 @@ set, so a theme toggle reaches the dancer either way.
 ## Scripting
 
 ```js
-document.querySelector('sky-dancer').cheer();   // set it flailing
+document.querySelector('sky-dancer').cheer();     // set it flailing
+document.querySelector('sky-dancer').deflate();   // flop
+document.querySelector('sky-dancer').inflate();   // stand back up
 ```
 
 `cheer()` gives the same burst a poke does, for a page with something to
 celebrate. It does nothing on a dancer that is off screen or holding a still
 pose for `prefers-reduced-motion`, rather than saving the flail up.
+
+`deflate()` and `inflate()` are the other half: a dancer that sags when
+something goes wrong and rises when it comes right. It stays on show either
+way — a mood, not `hide()` and `show()` — and one left down stays down, even
+if it scrolls out of view and back. A held pose takes the change at once
+instead of breathing into it.
 
 The balloon carries a dismiss button. Clicking it fires a bubbling, cancelable `close` event and then hides the widget; call `preventDefault()` on that event to handle it yourself, or set `closable="false"` to drop the button.
 

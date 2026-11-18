@@ -120,21 +120,23 @@ function save() {
 // How far back you can go. A handful: this is a toy to fiddle with, not a
 // document, and anything more wants a list rather than a button.
 const STEPS = 5;
-const past = [];
+const past = [], ahead = [];
 const undoButton = document.getElementById('undo');
+const redoButton = document.getElementById('redo');
 let before = null;    // between bursts, the state as it stands; during one,
                       // the state it started from
 let settling = 0;
 let stepping = false; // true while undo is putting a state back
 
-// File whatever a burst changed. Called when one settles, and again before an
-// undo, so a step is never skipped by clicking during the wait.
+// File whatever a burst changed. Called when one settles, and again before a
+// step either way, so a drag is never skipped over by stepping during the wait.
 function fileBurst() {
   clearTimeout(settling);
   const settled = JSON.stringify(snapshot());
   if (before === null || settled === before) { before = settled; return false; }
   past.push(before);
   if (past.length > STEPS) past.shift();
+  ahead.length = 0;   // a new change is a new branch; there is no going forward
   before = settled;
   return true;
 }
@@ -144,14 +146,18 @@ function fileBurst() {
 function remember() {
   if (stepping) return;
   clearTimeout(settling);
-  settling = setTimeout(() => { if (fileBurst()) syncUndo(); }, 350);
+  settling = setTimeout(() => { if (fileBurst()) syncSteps(); }, 350);
 }
 
-function syncUndo() {
+function syncSteps() {
   undoButton.disabled = !past.length;
   undoButton.title = past.length
     ? `Step back (${past.length} of ${STEPS})`
     : 'Nothing to step back to';
+  redoButton.disabled = !ahead.length;
+  redoButton.title = ahead.length
+    ? `Step forward (${ahead.length})`
+    : 'Nothing to step forward to';
 }
 
 function putBack(state) {
@@ -173,16 +179,37 @@ function putBack(state) {
   syncVariety();
 }
 
-undoButton.addEventListener('click', () => {
+// Stepping either way is the same move: take a state off one stack, put the
+// one being left onto the other, and wear it.
+function step(from, to) {
   fileBurst();   // a drag still inside its wait is a step of its own
-  const was = past.pop();
-  if (!was) return;
+  const was = from.pop();
+  if (!was) return syncSteps();   // filing that burst may have changed them
+  to.push(before);
+  if (to.length > STEPS) to.shift();
   stepping = true;
   putBack(JSON.parse(was));
   before = was;
   stepping = false;
   save();
-  syncUndo();
+  syncSteps();
+}
+
+undoButton.addEventListener('click', () => step(past, ahead));
+redoButton.addEventListener('click', () => step(ahead, past));
+
+// Nobody reaches for a button to undo. Left alone while words in a field are
+// being edited, where the browser's own undo is the one that is wanted.
+addEventListener('keydown', e => {
+  if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z') return;
+  const at = document.activeElement;
+  if (at && /^(INPUT|TEXTAREA)$/.test(at.tagName)
+      && !['range', 'color', 'checkbox'].includes(at.type)) return;
+  fileBurst();   // so a drag still settling counts as somewhere to step back to
+  const [from, to] = e.shiftKey ? [ahead, past] : [past, ahead];
+  if (!from.length) { syncSteps(); return; }   // leave the browser's own undo alone
+  e.preventDefault();
+  step(from, to);
 });
 
 let addressBar = 0, shownHash = null;

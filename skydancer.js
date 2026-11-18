@@ -624,6 +624,12 @@
     // when neither is happening, which is nearly always.
     const FILL = 0.9, EMPTY = 0.55;   // seconds
     let air = null;                   // { from, to, start, dur, then }
+    let resting = 1;                  // where a finished breath left it
+    // What the page has asked for, which only deflate() and inflate() change.
+    // An arrival fills to this rather than to full, so a dancer deliberately
+    // let down does not stand up again the next time it scrolls into view --
+    // while one that was dismissed still arrives upright when it is shown.
+    let target = 1;
 
     function breathe(from, to, dur, then) {
       air = { from, to, start: wall, dur, then };
@@ -631,11 +637,12 @@
 
     // how far the air has got, 0 flat to 1 full
     function pressure() {
-      if (!air) return 1;
+      if (!air) return resting;   // not 1: a dancer let down stays down
       const p = (wall - air.start) / air.dur;
       if (p >= 1) {
         const { to, then } = air;
         air = null;
+        resting = to;
         then?.();
         return to;
       }
@@ -666,6 +673,7 @@
       if (!air) return;
       const { to, then } = air;
       air = null;
+      resting = to;
       filled = to;
       then?.();
     }
@@ -1285,7 +1293,7 @@
       // over would snap it flat, and replacing it would drop a dismissal.
       if (coming && !held() && !air) {
         going = false;   // shown again, so the button is back in play
-        breathe(0, 1, FILL);
+        breathe(0, target, FILL);
       }
       start();
     });
@@ -1308,6 +1316,19 @@
     return {
       // only a held pose needs poking; a running loop picks changes up itself
       redraw: redrawStill,
+      // Let the air out, or put it back. A dismissal already on its way is
+      // left alone: it ends with the dancer gone, and that should win.
+      pump(to) {
+        if (going) return;   // a dismissal is already on its way out
+        target = to;
+        if (held()) {   // no frames to breathe with, so it lands at once
+          air = null;
+          resting = to;
+          updateLift(t);
+          return render();
+        }
+        breathe(pressure(), to, to ? FILL : EMPTY);
+      },
       // starting or stopping is the one change that has to reach the loop
       hold: start,
       // a colour attribute coming or going changes whether the page's own
@@ -1369,6 +1390,12 @@
     // Set it off: the same burst a poke gives it, for a page with something to
     // celebrate. A still pose has no loop to carry it, so it stays still.
     cheer() { this.anim?.cheer(); }
+
+    // The other half of that: a dancer can flop when something goes wrong and
+    // stand back up when it comes right. It stays on show either way -- this
+    // is a mood, not hide() and show().
+    deflate() { this.anim?.pump(0); }
+    inflate() { this.anim?.pump(1); }
 
     connectedCallback() {
       this.syncCount();
