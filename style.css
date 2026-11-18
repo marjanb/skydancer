@@ -415,6 +415,12 @@ textarea {
 /* a button carrying only an icon wants to stay square, not stretch to the
    width of the words it hasn't got */
 .ghost.icon { padding: 7px 8px; }
+.ghost:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
 
 /* ---- switches ---- */
 
@@ -491,7 +497,7 @@ button svg { width: 15px; height: 15px; flex: none; }
   border: 2px solid var(--border-strong);
   box-shadow: 0 3px 0 var(--border-strong);
 }
-.ghost:hover { background: var(--card); filter: none; }
+.ghost:hover:not(:disabled) { background: var(--card); filter: none; }
 .ghost:active { box-shadow: 0 0 0 var(--border-strong); }
 
 /* the shuffle spins as you press it */

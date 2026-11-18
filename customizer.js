@@ -102,14 +102,88 @@ function readShared() {
 const shared = readShared();
 if (shared) saved = { ...saved, ...shared };
 
+function snapshot() {
+  const state = Object.fromEntries(inputs.map(el => [el.dataset.key, readInput(el)]));
+  return Object.assign(state, { size: dancerSize.value, spot: { ...spot } });
+}
+
 function save() {
   try {
-    const state = Object.fromEntries(inputs.map(el => [el.dataset.key, readInput(el)]));
-    Object.assign(state, { size: dancerSize.value, spot });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot()));
   } catch {}
   writeShareLink();
+  remember();
 }
+
+// --- stepping back ---
+
+// How far back you can go. A handful: this is a toy to fiddle with, not a
+// document, and anything more wants a list rather than a button.
+const STEPS = 5;
+const past = [];
+const undoButton = document.getElementById('undo');
+let before = null;    // between bursts, the state as it stands; during one,
+                      // the state it started from
+let settling = 0;
+let stepping = false; // true while undo is putting a state back
+
+// File whatever a burst changed. Called when one settles, and again before an
+// undo, so a step is never skipped by clicking during the wait.
+function fileBurst() {
+  clearTimeout(settling);
+  const settled = JSON.stringify(snapshot());
+  if (before === null || settled === before) { before = settled; return false; }
+  past.push(before);
+  if (past.length > STEPS) past.shift();
+  before = settled;
+  return true;
+}
+
+// A slider drag is one change, not sixty, so a burst is only filed once it
+// stops coming.
+function remember() {
+  if (stepping) return;
+  clearTimeout(settling);
+  settling = setTimeout(() => { if (fileBurst()) syncUndo(); }, 350);
+}
+
+function syncUndo() {
+  undoButton.disabled = !past.length;
+  undoButton.title = past.length
+    ? `Step back (${past.length} of ${STEPS})`
+    : 'Nothing to step back to';
+}
+
+function putBack(state) {
+  dancer.show();
+  showStageBar(true);
+  dancerSize.value = state.size ?? dancerSize.defaultValue;
+  Object.assign(spot, state.spot && typeof state.spot === 'object'
+    ? state.spot : { x: null, y: null });
+  for (const el of inputs) {
+    const key = el.dataset.key;
+    const fallback = DEFAULTS[cfgKey(key)];
+    const value = key in state ? state[key] : fallback;
+    writeInput(el, usable(el, value) ? value : fallback);
+    apply(el);
+  }
+  // after the controls, never before: the spot is clamped against the dancer's
+  // size, so measuring it first would clamp against the size being replaced
+  placeDancer();
+  syncVariety();
+}
+
+undoButton.addEventListener('click', () => {
+  fileBurst();   // a drag still inside its wait is a step of its own
+  const was = past.pop();
+  if (!was) return;
+  stepping = true;
+  putBack(JSON.parse(was));
+  before = was;
+  stepping = false;
+  save();
+  syncUndo();
+});
 
 let addressBar = 0, shownHash = null;
 
@@ -251,6 +325,7 @@ for (const el of inputs) {
 }
 syncVariety();
 writeShareLink();
+before = JSON.stringify(snapshot());   // where the first undo should land
 
 // a value the control can't hold would land on a clamped slider or an empty
 // select, so fall back the way the widget itself does

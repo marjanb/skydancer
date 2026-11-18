@@ -4,6 +4,11 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
+## Unreleased
+
+- Customizer: an undo that steps back up to five changes. A slider drag counts
+  as one, and Surprise me and Reset are each a single step.
+
 ## v2.6.0 — 2026-11-18
 
 - A dancer fills with air when it first comes into view, and empties before it
