@@ -21,6 +21,7 @@
     hair: true,
     count: 1,         // how many dancers stand together
     variety: false,   // give a crowd a colour and a face each, instead of one look
+    paused: false,    // hold the pose; the dancer stays on show, it just stops
     sign: '',         // words in a speech bubble by the dancer; empty for none
     bubble: 'drawn',  // drawn | box | burst
     closable: true,   // a dismiss button on the balloon; false leaves it to the page
@@ -312,6 +313,11 @@
     const ctx = canvas.getContext('2d');
     const events = new AbortController();
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+    // A held pose has no loop running, so anything that wants the picture
+    // brought up to date has to paint it itself. The page can ask for that
+    // with `paused`, and the reader can ask for it through their system.
+    const held = () => reduced.matches || cfg.paused;
     let ready = false, visible = false, lastDpr = 0;
 
     // ---- canvas sizing ----
@@ -329,7 +335,7 @@
       canvas.height = canvas.clientHeight * dpr;
       ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
       // a still pose has no loop to redraw it after a resize
-      if (ready && visible && reduced.matches) render();
+      if (ready && visible && held()) render();
     }
 
     const observer = new ResizeObserver(resize);
@@ -417,7 +423,7 @@
     function burst() {
       // without a running loop nothing would decay the punch, so it would be
       // saved up and spent the moment the dancer came back into view
-      if (reduced.matches || !visible) return;
+      if (held() || !visible) return;
       punch = 1;
       kink = { start: t, dur: 0.9, dir: Math.random() < 0.5 ? -1 : 1, mag: 0.45 };
     }
@@ -444,16 +450,22 @@
     }
 
     // A sign can carry several phrases divided by a pipe, and the dancer works
-    // through them. Splitting is cached because this is read every frame; a
-    // still pose has no clock to turn the page, so it holds whichever phrase
-    // was up when the clock stopped.
+    // through them; a doubled pipe is a literal one. Splitting is cached
+    // because this is read every frame; a still pose has no clock to turn the
+    // page, so it holds whichever phrase was up when the clock stopped.
     const DWELL = 4;   // seconds a phrase stays up
     let split = { raw: null, phrases: [] };
 
     function phraseNow(t) {
       const raw = String(cfg.sign ?? '');
       if (raw !== split.raw) {
-        split = { raw, phrases: raw.split('|').map(x => x.trim()).filter(Boolean) };
+        // stand the doubled pipes aside while the single ones do the dividing
+        const KEPT = '\u0000';
+        split = {
+          raw,
+          phrases: raw.replace(/\|\|/g, KEPT).split('|')
+            .map(part => part.replaceAll(KEPT, '|').trim()).filter(Boolean),
+        };
       }
       const { phrases } = split;
       if (phrases.length < 2) return phrases[0] ?? '';
@@ -897,7 +909,7 @@
       // that corner swaps sides with the mirror, and easing it would still
       // leave the balloon itself jumping the width of its oval.
       const middle = wanted + side * BALLOON.cx * scale;
-      if (placedX === null || reduced.matches) placedX = middle;
+      if (placedX === null || held()) placedX = middle;
       else placedX += (middle - placedX) * Math.max(0, Math.min(1, frameDt * 6));
       const originX = placedX - side * BALLOON.cx * scale;
       // never flush with the top edge, bob and swell included
@@ -906,7 +918,7 @@
       // whimsy: it bobs, tilts and breathes, and springs in when the words
       // change. A still pose gets none of it: no loop, no implied movement.
       if (text !== said) { said = text; saidAt = t; }
-      const still = reduced.matches;
+      const still = held();
       const pop = still ? 1 : Math.min(1, (t - saidAt) / 0.4);
       const swell = still ? 1
         : (pop < 1 ? 0.5 + 0.5 * springy(pop) : 1) * (1 + Math.sin(t * 2.3) * 0.02);
@@ -1006,7 +1018,7 @@
         };
         if (!drift) drift = { x: mid.x, y: mid.y };
         // ~1.5s to catch up: a drift, not a chase. A still pose has no loop to ease with.
-        const ease = reduced.matches ? 1 : Math.max(0, Math.min(1, frameDt * 0.7));
+        const ease = held() ? 1 : Math.max(0, Math.min(1, frameDt * 0.7));
         drift.x += (mid.x - drift.x) * ease;
         drift.y += (mid.y - drift.y) * ease;
         drawBubble(drift, mid, Math.max(...dancers.map(d => d.girth)), sign);
@@ -1040,7 +1052,9 @@
     function start() {
       cancelAnimationFrame(raf);
       if (!visible) return;
-      if (reduced.matches) {
+      // Held either because the page asked or because the reader did. Either
+      // way there is no loop, so the pose is drawn once and left.
+      if (held()) {
         punch = 0;  // nothing will decay it while the pose is held
         updateLift(t);  // or the pose could be stuck mid-sag
         return render();
@@ -1067,12 +1081,14 @@
     readTheme();
     ready = true;
 
-    // a still pose has no loop to pick a change up, so it gets poked
-    function redrawStill() { if (ready && visible && reduced.matches) render(); }
+    // a held pose has no loop to pick a change up, so it gets poked
+    function redrawStill() { if (ready && visible && held()) render(); }
 
     return {
-      // only the still pose needs poking; the loop picks changes up on its own
+      // only a held pose needs poking; a running loop picks changes up itself
       redraw: redrawStill,
+      // starting or stopping is the one change that has to reach the loop
+      hold: start,
       // a colour attribute coming or going changes whether the page's own
       // theme gets a say, so the answer has to be looked up again
       rereadTheme: readTheme,
@@ -1112,6 +1128,7 @@
       // reading the theme forces a style recalc, and only these two can change
       // what it resolves to
       if (key === 'color' || key === 'accent') this.anim?.rereadTheme();
+      if (key === 'paused') this.anim?.hold();
       this.anim?.redraw();
     }
 

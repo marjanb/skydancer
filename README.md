@@ -28,7 +28,8 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `hair`       | `true`    | `false` hides the hair                     |
 | `count`      | `1`       | how many dancers stand together (max 6)    |
 | `variety`    | `false`   | `true` gives each dancer in a crowd its own colour, face, girth, arms and hair |
-| `sign`       | none      | words in a speech bubble; divide several with `\|` and it works through them, 4s each |
+| `paused`     | `false`   | `true` holds the pose; the dancer stays on show, it just stops |
+| `sign`       | none      | words in a speech bubble; divide several with `\|` and it works through them, 4s each. `\|\|` is a literal pipe |
 | `bubble`     | `drawn`   | bubble shape: `drawn`, `box` or `burst`    |
 | `closable`   | `true`    | `false` drops the balloon's dismiss button |
 

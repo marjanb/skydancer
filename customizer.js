@@ -85,12 +85,65 @@ try {
   saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
 } catch {}
 
+// A link carries the same settings the storage does, so a dancer can be sent
+// to someone instead of only kept. A colour loses its leading # on the way
+// out and gets it back on the way in, to spare the link a pair of %23s.
+const shareLink = document.getElementById('share-link');
+const copyLink = document.getElementById('copy-link');
+
+function readShared() {
+  const params = new URLSearchParams(location.hash.slice(1));
+  if (![...params].length) return null;
+  const out = {};
+  for (const [key, value] of params) out[key] = value;
+  return out;
+}
+
+const shared = readShared();
+if (shared) saved = { ...saved, ...shared };
+
 function save() {
   try {
     const state = Object.fromEntries(inputs.map(el => [el.dataset.key, readInput(el)]));
     Object.assign(state, { size: dancerSize.value, spot });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {}
+  writeShareLink();
+}
+
+let addressBar = 0, shownHash = null;
+
+function writeShareLink() {
+  const params = new URLSearchParams();
+  for (const el of inputs) {
+    const value = readInput(el);
+    params.set(el.dataset.key, el.type === 'color' ? String(value).replace('#', '') : value);
+  }
+  params.set('size', dancerSize.value);
+  const hash = `#${params}`;
+  // href rather than origin + pathname: on a file:// page the origin is the
+  // string "null", which would make the link unusable
+  shareLink.value = location.href.split('#')[0] + hash;
+
+  // The address bar follows along, without stacking up history entries. A
+  // browser throttles replaceState and starts throwing once a colour drag
+  // outruns it, so it waits for the dragging to stop.
+  if (hash === shownHash) return;
+  shownHash = hash;
+  clearTimeout(addressBar);
+  addressBar = setTimeout(() => {
+    try { history.replaceState(null, '', hash); } catch {}
+  }, 250);
+}
+
+// typing a hex drives the colour picker next to it; #abc and a missing # are fine
+const HEX = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+function parseHex(value) {
+  const m = HEX.exec(String(value).trim());
+  if (!m) return null;
+  const d = m[1];
+  return `#${d.length === 3 ? [...d].map(x => x + x).join('') : d}`.toLowerCase();
 }
 
 function readInput(el) {
@@ -100,7 +153,9 @@ function readInput(el) {
 }
 
 function writeInput(el, value) {
-  if (el.type === 'checkbox') el.checked = value;
+  // a link gives everything back as a string, storage as its own type
+  if (el.type === 'checkbox') el.checked = value === true || value === 'true';
+  else if (el.type === 'color') el.value = parseHex(value);
   else el.value = value;
 }
 
@@ -171,30 +226,39 @@ function wireCopy(button, field, label) {
 
 wireCopy(copyScript, embedScript, 'Copy');
 wireCopy(copyTag, embedTag, 'Copy');
+wireCopy(copyLink, shareLink, 'Copy');
 
 // data-key is the attribute name ("arm-length"); the widget's cfg is camelCase
 const cfgKey = key => key.replace(/-(\w)/g, (_, c) => c.toUpperCase());
 const OFF = ['false', '0', 'no', 'off'];  // the same values the widget treats as off
 
 if (saved.size) dancerSize.value = saved.size;
-if (saved.spot) Object.assign(spot, saved.spot);
+if (saved.spot && typeof saved.spot === 'object') Object.assign(spot, saved.spot);
 placeDancer();
 
 for (const el of inputs) {
   const key = el.dataset.key;
-  writeInput(el, key in saved ? saved[key] : DEFAULTS[cfgKey(key)]);
-  // the input clamps stale saved values, so apply what it shows, not what was saved
+  const fallback = DEFAULTS[cfgKey(key)];
+  const stored = key in saved ? saved[key] : fallback;
+  // A link can carry anything at all. A value the control can't hold would
+  // land on a clamped slider, an empty select or a black colour and then be
+  // saved as if it had been chosen, so it goes back to the default instead.
+  writeInput(el, usable(el, stored) ? stored : fallback);
+  // a slider still clamps what it does accept, so apply what it shows
   apply(el);
   el.addEventListener('input', () => { apply(el); save(); });
 }
 syncVariety();
+writeShareLink();
 
 // a value the control can't hold would land on a clamped slider or an empty
 // select, so fall back the way the widget itself does
 function usable(el, value) {
-  if (value === null) return false;
-  if (el.type === 'range') return value.trim() !== '' && Number.isFinite(Number(value));
-  if (el.tagName === 'SELECT') return [...el.options].some(o => o.value === value);
+  if (value === null || value === undefined) return false;
+  const text = String(value);
+  if (el.type === 'range') return text.trim() !== '' && Number.isFinite(Number(text));
+  if (el.type === 'color') return parseHex(text) !== null;
+  if (el.tagName === 'SELECT') return [...el.options].some(o => o.value === text);
   return true;
 }
 
@@ -212,16 +276,6 @@ embedTag.addEventListener('input', () => {
   }
   save();
 });
-
-// typing a hex drives the colour picker next to it; #abc and a missing # are fine
-const HEX = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
-
-function parseHex(value) {
-  const m = HEX.exec(value.trim());
-  if (!m) return null;
-  const d = m[1];
-  return `#${d.length === 3 ? [...d].map(x => x + x).join('') : d}`.toLowerCase();
-}
 
 for (const field of document.querySelectorAll('.hex')) {
   const picker = field.closest('.swatch').querySelector('input[type="color"]');
