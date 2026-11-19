@@ -839,7 +839,9 @@
       const step = letters.length > 1 ? span / gaps : 0;
       const segLen = pts[1] ? dist(pts[0], pts[1]) : width;
       const size = Math.min(width * 0.62, Math.max(step, 1) * segLen * 0.85);
-      ctx.font = `700 ${size}px system-ui, -apple-system, sans-serif`;
+      // heavier than the placard and the balloon: those are read close up,
+      // while this has a moving, shaded tube under it to carry
+      ctx.font = `900 ${size}px system-ui, -apple-system, sans-serif`;
 
       letters.forEach((letter, i) => {
         const p = pts[Math.round(first - i * step)];
