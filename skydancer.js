@@ -1113,12 +1113,15 @@
       ctx.save();
       ctx.lineWidth = 3;
       ctx.strokeStyle = OUTLINE;
-      // One post, drawn first so the board sits over the top of it. The fan
-      // hides where it meets the ground, which is all a sign on a forecourt
-      // ever shows of its own footing anyway.
+      // One post on a foot, drawn first so the board sits over the top of it.
       ctx.beginPath();
       ctx.moveTo(x, top + h);
       ctx.lineTo(x, foot);
+      // wider than the fan, or it is lost against it: the fan is dark and sits
+      // on the same line the foot does
+      const base = girth * 1.05;
+      ctx.moveTo(x - base, foot);
+      ctx.lineTo(x + base, foot);
       ctx.stroke();
 
       ctx.fillStyle = '#fffdf6';
