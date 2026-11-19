@@ -23,7 +23,7 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `arm-length` | `0.32`    | arm length as a fraction of body height    |
 | `speed`      | `1`       | animation speed                            |
 | `wildness`   | `1`       | how much it flails                         |
-| `wind`       | `1`       | wind strength; `0` is calm                 |
+| `wind`       | `1`       | wind strength; `0` is calm. Scales the gusts, the pointer, and the page scrolling past |
 | `face`       | `happy`   | `happy`, `surprised`, `cool`, `wink`, `joy`, `sleepy` or `angry` |
 | `pattern`    | `none`    | markings on the body: `none`, `rings` or `spiral` |
 | `hair`       | `true`    | `false` hides the hair                     |

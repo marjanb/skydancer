@@ -4,6 +4,13 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
+## Unreleased
+
+- The page scrolling past is wind: a dancer is blown along with it, right
+  going down and left going up, and settles when the scrolling stops. It
+  scales with `wind` like everything else, so `wind="0"` ignores it, and a
+  paused dancer or a reader who asked for less motion never sees it.
+
 ## v2.9.1 — 2026-11-19
 
 - The `placard` is about two fifths bigger, so the words that hold still

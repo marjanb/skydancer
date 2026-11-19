@@ -406,10 +406,18 @@
     }
 
     // Wind is one signed number: negative blows left, positive blows right.
-    // It is the pointer (-1 far left .. 1 far right, 0 when it leaves) plus
-    // random gusts, scaled by the wind setting and smoothed.
+    // It is the pointer (-1 far left .. 1 far right, 0 when it leaves), the
+    // page going by underneath, and random gusts, scaled by the wind setting
+    // and smoothed.
     let pointerWind = 0, wind = 0;
     let gust = { start: 4, dur: 2, force: 0.7 };
+    // The page scrolling past is wind too: the faster it goes, the harder the
+    // dancer is blown along with it. Sampled per frame from the scroll
+    // position rather than from scroll events, so a smooth scroll, a flick and
+    // a jump all read the same, and standing still reads as nothing at all.
+    const SCROLL_FULL = 55;   // px in one frame for all the wind there is
+    let scrolledAt = null;    // where the page was last frame
+    let scrollWind = 0;
 
     // where the pointer is, in drawing units, for the eyes to find
     let gaze = null;
@@ -596,7 +604,17 @@
       }
       const p = (t - gust.start) / gust.dur;
       const gustForce = p < 0 || p > 1 ? 0 : gust.force * Math.sin(Math.PI * p);
-      const target = Math.max(-1, Math.min(1, pointerWind + gustForce)) * cfg.wind;
+      // Down the page blows it right, up blows it left. The reading is taken
+      // once a frame and eased, so it builds while the scroll runs and falls
+      // away on its own when it stops.
+      const now = scrollY;
+      const moved = scrolledAt === null ? 0 : now - scrolledAt;
+      scrolledAt = now;
+      const blown = Math.max(-1, Math.min(1, moved / SCROLL_FULL));
+      // rises with the scroll at once, falls back slowly: a gust, not a switch
+      scrollWind += (blown - scrollWind) * Math.min(1, dt * (Math.abs(blown) > Math.abs(scrollWind) ? 18 : 3));
+      const together = pointerWind + gustForce + scrollWind;
+      const target = Math.max(-1, Math.min(1, together)) * cfg.wind;
       wind += (target - wind) * Math.min(1, dt * 4);
     }
 
@@ -1389,6 +1407,7 @@
       // way there is no loop, so the pose is drawn once and left.
       if (held()) {
         punch = 0;  // nothing will decay it while the pose is held
+        scrolledAt = null;   // no frames to measure the page going by with
         shouts = [];    // nor any clock to fade a blurted word out with
         blurted.textContent = '';   // which is what would have cleared this
         settleAir();    // no frames to breathe with, so finish it now
