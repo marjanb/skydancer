@@ -12,6 +12,9 @@ look when a dancer starts looking different.
   everything above them thrashes.
 - `shout` is what a dancer blurts when poked. The word pops up beside it and
   fades, somewhere different each time, leaving whatever the sign says alone.
+  Divide several with `|` as the sign does, and each poke takes one of them --
+  never the one it took last. A `shout` that already contains a pipe now
+  splits there; `||` writes a literal one.
 - Words in the speech balloon type themselves out rather than appearing whole.
 
 ## v2.7.0 — 2026-11-18

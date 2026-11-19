@@ -203,6 +203,18 @@
   };
   const FACES = Object.keys(LOOKS);
 
+  // Words divided by a pipe are several phrases; a doubled pipe is a literal
+  // one. The sign works through them in turn, a poke picks one at a time.
+  const KEPT = '\u0000';
+
+  function phrasesOf(raw) {
+    return String(raw ?? '')
+      .replace(/\|\|/g, KEPT)
+      .split('|')
+      .map(part => part.replaceAll(KEPT, '|').trim())
+      .filter(Boolean);
+  }
+
   // What a varied crowd differs by, beyond its turn round the hue wheel. The
   // first line is all ones, so the first dancer is exactly what the page asked
   // for and the rest fan out from it.
@@ -537,13 +549,22 @@
     // and a word thrown up there lands on top of what the dancer is saying.
     let lastChest = null;
     let lastTurn = 0;
+    let lastShout = -1;   // which word the last poke took
 
     function burst() {
       // without a running loop nothing would decay the punch, so it would be
       // saved up and spent the moment the dancer came back into view
       if (held() || !visible) return;
-      const words = String(cfg.shout ?? '').trim();
-      if (words && lastChest) {
+      // A poke takes one of them, never the one it took last: a flurry of
+      // pokes should be a flurry of different words.
+      const choices = phrasesOf(cfg.shout);
+      if (choices.length && lastChest) {
+        if (choices.length > 1) {
+          let pick = lastShout;
+          while (pick === lastShout) pick = Math.floor(Math.random() * choices.length);
+          lastShout = pick;
+        } else lastShout = 0;
+        const words = choices[lastShout];
         // at least a third of the way round from the last one, so two in a
         // row never land on top of each other
         lastTurn += Math.PI * (0.7 + Math.random() * 0.6);
@@ -583,24 +604,15 @@
       themed = { color: pick('color'), accent: pick('accent') };
     }
 
-    // A sign can carry several phrases divided by a pipe, and the dancer works
-    // through them; a doubled pipe is a literal one. Splitting is cached
-    // because this is read every frame; a still pose has no clock to turn the
-    // page, so it holds whichever phrase was up when the clock stopped.
+    // The sign works through its phrases in turn. Splitting is cached because
+    // this is read every frame; a still pose has no clock to turn the page, so
+    // it holds whichever phrase was up when the clock stopped.
     const DWELL = 4;   // seconds a phrase stays up
     let split = { raw: null, phrases: [] };
 
     function phraseNow(t) {
       const raw = String(cfg.sign ?? '');
-      if (raw !== split.raw) {
-        // stand the doubled pipes aside while the single ones do the dividing
-        const KEPT = '\u0000';
-        split = {
-          raw,
-          phrases: raw.replace(/\|\|/g, KEPT).split('|')
-            .map(part => part.replaceAll(KEPT, '|').trim()).filter(Boolean),
-        };
-      }
+      if (raw !== split.raw) split = { raw, phrases: phrasesOf(raw) };
       const { phrases } = split;
       if (phrases.length < 2) return phrases[0] ?? '';
       return phrases[Math.floor(Math.max(0, t) / DWELL) % phrases.length];
@@ -1463,6 +1475,7 @@
       if (held()) {
         punch = 0;  // nothing will decay it while the pose is held
         shouts = [];    // nor any clock to fade a blurted word out with
+        blurted.textContent = '';   // which is what would have cleared this
         settleAir();    // no frames to breathe with, so finish it now
         updateLift(t);  // or the pose could be stuck mid-sag
         return render();

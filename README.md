@@ -33,7 +33,7 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `sign`       | none      | words in a speech bubble; divide several with `\|` and it works through them, 4s each. `\|\|` is a literal pipe |
 | `print`      | none      | words printed down the body, bending with the tube |
 | `placard`    | none      | words on a board staked at the dancer's feet, which hold still |
-| `shout`      | none      | what it blurts when poked; the word pops up beside it and fades, leaving the sign alone |
+| `shout`      | none      | what it blurts when poked; the word pops up beside it and fades, leaving the sign alone. Divide several with `\|` (and `\|\|` for a literal one) and a poke takes one |
 | `bubble`     | `drawn`   | bubble shape: `drawn`, `box` or `burst`    |
 | `closable`   | `true`    | `false` drops the balloon's dismiss button |
 | `href`       | none      | where a click on the dancer leads, in a new tab; it also becomes a link that can be tabbed to |
