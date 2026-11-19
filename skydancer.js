@@ -1111,7 +1111,11 @@
     function drawPlacard(x, girth, text) {
       const words = text.trim();
       if (!words) return;
-      let size = Math.max(girth * 0.3, H * 0.026);
+      // Not a floor, despite the look of it: the width cap below shrinks the
+      // size again when there is a lot to say. It is a starting size, and the
+      // second term is what a thin dancer's board is read at -- below a girth
+      // of about 86 it is the one that wins.
+      let size = Math.max(girth * 0.42, H * 0.036);
       const face = () => { ctx.font = `700 ${size}px system-ui, -apple-system, sans-serif`; };
       face();
       // narrow enough to stay on the canvas, however much it has to say
