@@ -4,11 +4,16 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
-## Unreleased
+## v2.9.0 — 2026-11-19
 
 - **The balloon's dismiss button is gone**, along with the `closable`
   attribute and the `close` event it fired. A page that hid a dancer that
   way should call `hide()` or set `hidden` instead.
+- `print` is lettered by hand now, in Skia where there is one, and heavier:
+  it is a sign painted on cloth rather than a label, and it is read at a
+  distance across a moving, shaded tube.
+- **Fixed:** a literal NUL character in a `sign` or a `shout` was read as a
+  pipe and split the words there.
 
 ## v2.8.0 — 2026-11-19
 
