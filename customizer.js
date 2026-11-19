@@ -431,6 +431,41 @@ document.getElementById('reset').addEventListener('click', () => {
   save();
 });
 
+// Four dancers worth embedding, for a page you have just landed on. Each one
+// is a whole look: putBack fills anything a preset leaves out from the
+// widget's own defaults, so none of them inherit the last one's leftovers.
+const PRESETS = {
+  yard: {
+    color: '#e8452c', accent: '#ffd60a', girth: 95, 'arm-length': 0.3,
+    speed: 1.35, wildness: 1.5, wind: 0.8, face: 'happy', hair: true,
+    print: 'SALE', placard: 'Test drive today', shout: 'Honk!|What a deal|Drive it away',
+  },
+  shop: {
+    color: '#2bb673', accent: '#ffd60a', girth: 68, 'arm-length': 0.28,
+    speed: 0.9, wildness: 0.55, wind: 0.25, face: 'happy', hair: true,
+    sign: 'Come in', bubble: 'drawn', placard: 'Open till 8',
+  },
+  party: {
+    color: '#7d3cff', accent: '#00e0c6', girth: 82, 'arm-length': 0.42,
+    speed: 1.9, wildness: 2, wind: 1.1, face: 'joy', hair: true,
+    pattern: 'spiral', sign: 'Woo!', bubble: 'burst', shout: 'Yeah!|Woo|Party',
+  },
+  night: {
+    color: '#2d2a55', accent: '#ff2d78', girth: 74, 'arm-length': 0.34,
+    speed: 0.75, wildness: 0.7, wind: 0.35, face: 'cool', hair: false,
+    pattern: 'rings', placard: 'Open late', sign: 'Still open',
+  },
+};
+
+for (const chip of document.querySelectorAll('[data-preset]')) {
+  chip.addEventListener('click', () => {
+    // Where it stands and how big it is are yours, not the preset's, so they
+    // are carried across rather than reset with everything else.
+    putBack({ ...PRESETS[chip.dataset.preset], size: dancerSize.value, spot: { ...spot } });
+    save();
+  });
+}
+
 document.getElementById('randomize').addEventListener('click', () => {
   for (const el of inputs) {
     // count comes before variety in the DOM, so its apply() has already

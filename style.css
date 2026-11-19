@@ -163,6 +163,13 @@ h1, h2, button, .mark { font-family: Fredoka, Nunito, system-ui, sans-serif; }
 .steps { flex: none; display: flex; gap: 5px; margin-left: auto; }
 #panel-head p { margin: 0; font-size: 13px; color: var(--muted); }
 
+/* A row of whole looks to start from, above the controls that refine one.
+   The chips are the same pill the Copy buttons use, a little taller: these
+   are something you reach for, not something tucked onto a label's line. */
+.presets { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.presets-label { font-size: 13px; color: var(--muted); }
+.presets .chip { padding: 5px 12px; font-size: 13px; color: var(--text); }
+
 .mark {
   flex: none;
   display: grid;

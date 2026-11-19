@@ -11,6 +11,10 @@ look when a dancer starts looking different.
   scales with `wind` like everything else, so `wind="0"` ignores it, and a
   paused dancer or a reader who asked for less motion never sees it. Only
   the page's own scroll counts, not a scrolling container's.
+- Customizer: four looks to start from -- car yard, shop front, party and
+  late night -- above the controls that refine one. Each is a whole dancer,
+  so none of them inherit the last one's leftovers, and your size and where
+  you dragged it are kept.
 - `hours` gives a dancer opening times, as `9-17`, or `22-6` to run through
   midnight. Outside them the air is out and it lies flat, which is what a
   real one does when the fan goes off. It reads the reader's own clock.
