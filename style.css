@@ -232,6 +232,9 @@ h1, h2, button, .mark { font-family: Fredoka, Nunito, system-ui, sans-serif; }
 /* The crowd size and the switch that mixes it up are one setting in two
    parts -- the switch does nothing until there is more than one dancer -- so
    they are boxed together rather than left to read as unrelated. */
+/* its own display would otherwise outrank the browser's rule for [hidden] */
+.group[hidden] { display: none; }
+
 .group {
   display: flex;
   flex-direction: column;

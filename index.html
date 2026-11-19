@@ -114,7 +114,9 @@
         <label class="field"><span class="head">Speed<output></output></span><input type="range" data-key="speed" min="0.2" max="2.5" step="0.05"></label>
         <label class="field"><span class="head">Wildness<output></output></span><input type="range" data-key="wildness" min="0.2" max="2" step="0.05"></label>
         <label class="field"><span class="head">Wind<output></output></span><input type="range" data-key="wind" min="0" max="1.5" step="0.05"></label>
-        <div class="group">
+        <!-- Put away rather than taken out: a page can still ask for a crowd
+             with count and variety, there is just no control for it here. -->
+        <div class="group" hidden>
           <label class="field"><span class="head">Dancers<output></output></span><input type="range" data-key="count" min="1" max="6" step="1"></label>
           <label class="toggle"><span>All different</span><input type="checkbox" data-key="variety"></label>
         </div>

@@ -343,7 +343,7 @@ placeDancer();
 for (const el of inputs) {
   const key = el.dataset.key;
   const fallback = DEFAULTS[cfgKey(key)];
-  const stored = key in saved ? saved[key] : fallback;
+  const stored = shelved(el) || !(key in saved) ? fallback : saved[key];
   // A link can carry anything at all. A value the control can't hold would
   // land on a clamped slider, an empty select or a black colour and then be
   // saved as if it had been chosen, so it goes back to the default instead.
@@ -369,6 +369,11 @@ function linkable(text) {
     return false;
   }
 }
+
+// A control that has been put away takes its default and nothing else: a
+// value saved, shared or randomised into it could not be undone by hand.
+// Declared, not assigned, because the restore loop above runs before this.
+function shelved(el) { return !!el.closest('[hidden]'); }
 
 function usable(el, value) {
   if (value === null || value === undefined) return false;
@@ -434,6 +439,7 @@ document.getElementById('randomize').addEventListener('click', () => {
     // count comes before variety in the DOM, so its apply() has already
     // settled whether the toggle is live by the time we get here. Only that
     // one is ever disabled, so only that one is held back.
+    if (shelved(el)) continue;   // out of sight, so leave it at its default
     if (el.type === 'checkbox') {
       el.checked = Math.random() < 0.7 && !(el === variety && variety.disabled);
     }
