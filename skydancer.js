@@ -841,7 +841,7 @@
     // line of text bends and ripples with the dancer instead of riding on top
     // as a flat label. Drawn under the shading, so it catches the same light.
     const PRINT_TOP = 0.74;    // clear of the face
-    const PRINT_FOOT = 0.14;   // clear of the fan, and of a placard staked there
+    const PRINT_FOOT = 0.26;   // clear of the fan, and of a placard staked in it
 
     function printDown(pts, width, text, ink) {
       const n = pts.length - 1;
@@ -1105,35 +1105,38 @@
       let w = ctx.measureText(words).width + pad() * 2;
       if (w > room) { size *= room / w; face(); w = ctx.measureText(words).width + pad() * 2; }
       const h = size + pad();
-      const foot = H - ground();
-      // tall enough that the board clears the fan rather than hiding behind it
-      const post = girth * 1.15;
-      const top = foot - post - h;
+      // Staked in the dancer's own base and leaning out of it, rather than
+      // standing on a foot of its own: the fan is the only thing on this
+      // canvas that is actually planted in the ground.
+      const LEAN = 0.26;                 // radians out of upright
+      const root = { x, y: H - ground() - girth * 0.12 };
+      const reach = girth * 1.3 + h * 0.5;
+      const tip = {
+        x: root.x + Math.sin(LEAN) * reach,
+        y: root.y - Math.cos(LEAN) * reach,
+      };
 
       ctx.save();
       ctx.lineWidth = 3;
       ctx.strokeStyle = OUTLINE;
-      // One post on a foot, drawn first so the board sits over the top of it.
       ctx.beginPath();
-      ctx.moveTo(x, top + h);
-      ctx.lineTo(x, foot);
-      // wider than the fan, or it is lost against it: the fan is dark and sits
-      // on the same line the foot does
-      const base = girth * 1.05;
-      ctx.moveTo(x - base, foot);
-      ctx.lineTo(x + base, foot);
+      ctx.moveTo(root.x, root.y);
+      ctx.lineTo(tip.x, tip.y);
       ctx.stroke();
 
+      // the board rides the post, so it leans with it
+      ctx.translate(tip.x, tip.y);
+      ctx.rotate(LEAN);
       ctx.fillStyle = '#fffdf6';
       ctx.beginPath();
-      ctx.roundRect(x - w / 2, top, w, h, size * 0.28);
+      ctx.roundRect(-w / 2, -h, w, h, size * 0.28);
       ctx.fill();
       ctx.stroke();
 
       ctx.fillStyle = OUTLINE;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(words, x, top + h / 2);
+      ctx.fillText(words, 0, -h / 2);
       ctx.restore();
     }
 
