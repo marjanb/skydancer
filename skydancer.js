@@ -25,7 +25,7 @@
     pattern: 'none',  // markings on the body: none | rings | spiral
     print: '',        // words printed down the body, the way a real one carries them
     placard: '',      // words on a board staked at the dancer's feet, which hold still
-    shout: '',        // what it says when poked, for a moment, over whatever sign it carries
+    shout: '',        // what it blurts when poked, floating beside the dancer
     href: '',         // where a click on the dancer leads; empty for nowhere
     sign: '',         // words in a speech bubble by the dancer; empty for none
     bubble: 'drawn',  // drawn | box | burst
@@ -442,6 +442,7 @@
 
     const root = canvas.getRootNode();
     const saidText = root.querySelector('.said');
+    const blurted = root.querySelector('.blurted');
     const dismiss = root.querySelector('.dismiss');
     const leadsTo = root.querySelector('.go');
 
@@ -525,14 +526,38 @@
       else breathe(pressure(), 0, EMPTY, () => { host.hidden = true; });
     }, { signal: events.signal });
 
-    const SHOUT = 2.4;   // seconds a poked dancer keeps its word up
-    let shoutingTill = -1;
+    // A poke makes it blurt, and the word pops up beside it rather than going
+    // into the balloon: the balloon is what the dancer is there to say, and a
+    // poke should not talk over it. Each one lands somewhere else, so a few in
+    // a row read as a flurry rather than one word flickering.
+    const SHOUTS = 5;         // most on screen at once
+    const SHOUT_LIFE = 1.15;  // seconds each one lasts
+    let shouts = [];
+    // Centred on the chest rather than the head: the balloon hangs by the head,
+    // and a word thrown up there lands on top of what the dancer is saying.
+    let lastChest = null;
+    let lastTurn = 0;
 
     function burst() {
       // without a running loop nothing would decay the punch, so it would be
       // saved up and spent the moment the dancer came back into view
       if (held() || !visible) return;
-      if (String(cfg.shout ?? '').trim()) shoutingTill = wall + SHOUT;
+      const words = String(cfg.shout ?? '').trim();
+      if (words && lastChest) {
+        // at least a third of the way round from the last one, so two in a
+        // row never land on top of each other
+        lastTurn += Math.PI * (0.7 + Math.random() * 0.6);
+        const reach = cfg.girth * (1.5 + Math.random());
+        shouts.push({
+          words,
+          x: lastChest.x + Math.cos(lastTurn) * reach,
+          y: lastChest.y + Math.sin(lastTurn) * reach * 0.7,
+          at: wall,
+          tilt: (Math.random() - 0.5) * 0.45,
+        });
+        if (shouts.length > SHOUTS) shouts.shift();
+        blurted.textContent = words;
+      }
       punch = 1;
       kink = { start: t, dur: 0.9, dir: Math.random() < 0.5 ? -1 : 1, mag: 0.45 };
     }
@@ -1090,6 +1115,43 @@
       ctx.restore();
     }
 
+    // The blurted words: they rise a little, swell in and fade out. Drawn over
+    // everything, with a pale halo behind them so they read against the dancer
+    // as easily as against the page.
+    function drawShouts(girth) {
+      if (!shouts.length) {
+        // cleared once they have gone, or the same word blurted again would
+        // not read as a change and would go unsaid
+        if (blurted.textContent) blurted.textContent = '';
+        return;
+      }
+      shouts = shouts.filter(s => wall - s.at < SHOUT_LIFE);
+      const size = Math.max(girth * 0.45, H * 0.032);
+      ctx.save();
+      ctx.font = `800 ${size}px system-ui, -apple-system, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineJoin = 'round';
+      for (const s of shouts) {
+        const life = (wall - s.at) / SHOUT_LIFE;
+        const swell = 0.7 + 0.3 * Math.min(1, life / 0.22) + life * 0.1;
+        // up fast, then gone: in over the first fifth, out over the rest
+        const fade = life < 0.2 ? life / 0.2 : 1 - (life - 0.2) / 0.8;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, fade);
+        ctx.translate(s.x, s.y - life * girth * 0.8);
+        ctx.rotate(s.tilt);
+        ctx.scale(swell, swell);
+        ctx.lineWidth = size * 0.3;
+        ctx.strokeStyle = '#fffdf6';
+        ctx.strokeText(s.words, 0, 0);
+        ctx.fillStyle = OUTLINE;
+        ctx.fillText(s.words, 0, 0);
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
     // A board on a stake at the dancer's feet. Everything else here moves, so
     // this is the one place words can sit and be read: it does not bob, lean
     // or drift with the tube above it.
@@ -1332,6 +1394,8 @@
         for (const arm of arms) drawTube(arm, girth * 0.38, look.accent);
         drawTube(body, girth, look.color, FLAT, cfg.pattern, look.accent,
                  String(cfg.print ?? '').trim());
+        // the last drawn is the front-most, since they are sorted by girth
+        lastChest = body[Math.round(BODY_SEGS * 0.55)];   // for blurted words
         drawFace(body[Math.round(BODY_SEGS * 0.87)], girth, t, look.face);
         drawFan(x, girth);
       }
@@ -1340,9 +1404,7 @@
       drawPlacard(W / 2, Math.max(...dancers.map(d => d.girth)),
                   String(cfg.placard ?? ''));
 
-      // a poke puts a word in its mouth, over whatever it was saying
-      const shout = String(cfg.shout ?? '').trim();
-      const sign = wall < shoutingTill && shout ? shout : phraseNow(t);
+      const sign = phraseNow(t);
       closeAt = null;
       if (sign && dancers.length) {
         // one balloon for the lot of them, floating over the middle of the group
@@ -1363,6 +1425,8 @@
       placeDismiss();
       aimLink();
       labelLink(sign);
+      // last of all, so a blurted word lands over everything else
+      drawShouts(Math.max(...dancers.map(d => d.girth)));
     }
 
     // ---- loop ----
@@ -1398,6 +1462,7 @@
       // way there is no loop, so the pose is drawn once and left.
       if (held()) {
         punch = 0;  // nothing will decay it while the pose is held
+        shouts = [];    // nor any clock to fade a blurted word out with
         settleAir();    // no frames to breathe with, so finish it now
         updateLift(t);  // or the pose could be stuck mid-sag
         return render();
@@ -1481,6 +1546,9 @@
         // button that dismisses them -- gets a real element of its own.
         + `<canvas aria-hidden="true"></canvas>`
         + `<p class="said" hidden></p>`
+        // A blurted word is painted and then gone, so it needs saying as well
+        // as showing. Polite, because it is an aside, not the point.
+        + `<p class="said blurted" aria-live="polite"></p>`
         + `<button class="dismiss" type="button" aria-label="Dismiss" hidden></button>`
         // A new tab, so a click never takes the reader off the page the dancer
         // is advertising. noopener keeps the opened page from reaching back

@@ -10,7 +10,8 @@ look when a dancer starts looking different.
   Each letter turns with the tube, so the line bends as the dancer moves.
 - `placard` stakes a board at its feet, for words that hold still while
   everything above them thrashes.
-- `shout` is what a dancer blurts when poked, over whatever sign it carries.
+- `shout` is what a dancer blurts when poked. The word pops up beside it and
+  fades, somewhere different each time, leaving whatever the sign says alone.
 - Words in the speech balloon type themselves out rather than appearing whole.
 
 ## v2.7.0 — 2026-11-18
