@@ -69,7 +69,7 @@
   // tipX/tipY: where the tail ends, so the balloon can be hung off it
   const BALLOON = { cx: 81, cy: 37, rx: 58, ry: 31, tipX: 27.4, tipY: 77.9 };
 
-  // Five bubbles in one coordinate frame, so they hang the same way. `fit` is
+  // Three bubbles in one coordinate frame, so they hang the same way. `fit` is
   // how much of the oval the words may use; a spiky one has less room.
   const BUBBLES = {
     drawn: { fit: 1 },  // the hand-drawn one
@@ -204,13 +204,11 @@
 
   // Words divided by a pipe are several phrases; a doubled pipe is a literal
   // one. The sign works through them in turn, a poke picks one at a time.
-  const KEPT = '\u0000';
-
+  // Each phrase is a run of anything but a pipe, with `||` allowed inside it,
+  // so a doubled pipe never has to be stood in for and put back.
   function phrasesOf(raw) {
-    return String(raw ?? '')
-      .replace(/\|\|/g, KEPT)
-      .split('|')
-      .map(part => part.replaceAll(KEPT, '|').trim())
+    return (String(raw ?? '').match(/(?:\|\||[^|])+/g) ?? [])
+      .map(part => part.replaceAll('||', '|').trim())
       .filter(Boolean);
   }
 
@@ -614,15 +612,15 @@
     // An arrival is the air going in: the tube fills from flat on the way in.
     // Null when nothing is filling or emptying, which is nearly always.
     const FILL = 0.9, EMPTY = 0.55;   // seconds
-    let air = null;                   // { from, to, start, dur, then }
-    let resting = 1;                  // where a finished breath left it
-    // What the page has asked for, which only deflate() and inflate() change.
-    // An arrival fills to this rather than to full, so a dancer deliberately
-    // let down does not stand up again the next time it scrolls into view.
-    let target = 1;
+    let air = null;                   // { from, to, start, dur }
+    // Where a finished breath left it, and so also what the page last asked
+    // for: an arrival fills to this rather than to full, so a dancer
+    // deliberately let down does not stand up again the next time it scrolls
+    // into view.
+    let resting = 1;
 
-    function breathe(from, to, dur, then) {
-      air = { from, to, start: wall, dur, then };
+    function breathe(from, to, dur) {
+      air = { from, to, start: wall, dur };
     }
 
     // how far the air has got, 0 flat to 1 full
@@ -630,11 +628,9 @@
       if (!air) return resting;   // not 1: a dancer let down stays down
       const p = (wall - air.start) / air.dur;
       if (p >= 1) {
-        const { to, then } = air;
+        resting = air.to;
         air = null;
-        resting = to;
-        then?.();
-        return to;
+        return resting;
       }
       // eased, so it leaves and arrives without a jolt
       const e = p < 0 ? 0 : 0.5 - Math.cos(Math.PI * p) / 2;
@@ -661,11 +657,8 @@
     // stay half up.
     function settleAir() {
       if (!air) return;
-      const { to, then } = air;
+      resting = filled = air.to;
       air = null;
-      resting = to;
-      filled = to;
-      then?.();
     }
 
     // bend that swings a loose chain (arm, hair) round to point downwind
@@ -1329,9 +1322,12 @@
         drawFan(x, girth);
       }
 
+      // The fattest of them sets the scale for everything drawn over the
+      // group, so the board, the balloon and a blurted word agree.
+      const widest = Math.max(...dancers.map(d => d.girth));
+
       // one board for the lot of them, in front of their feet
-      drawPlacard(W / 2, Math.max(...dancers.map(d => d.girth)),
-                  String(cfg.placard ?? ''));
+      drawPlacard(W / 2, widest, String(cfg.placard ?? ''));
 
       const sign = phraseNow(t);
       if (sign && dancers.length) {
@@ -1346,14 +1342,14 @@
         const ease = held() ? 1 : Math.max(0, Math.min(1, frameDt * 0.7));
         drift.x += (mid.x - drift.x) * ease;
         drift.y += (mid.y - drift.y) * ease;
-        drawBubble(drift, mid, Math.max(...dancers.map(d => d.girth)), sign);
+        drawBubble(drift, mid, widest, sign);
       }
       // what the canvas just painted, said again for anything that can't see it
       announce(sign);
       aimLink();
       labelLink(sign);
       // last of all, so a blurted word lands over everything else
-      drawShouts(Math.max(...dancers.map(d => d.girth)));
+      drawShouts(widest);
     }
 
     // ---- loop ----
@@ -1406,7 +1402,7 @@
       // A held pose has no clock to fill by, so it just stands there. One
       // already part way in or out carries on from where it stopped: starting
       // over would snap it flat.
-      if (coming && !held() && !air) breathe(0, target, FILL);
+      if (coming && !held() && !air) breathe(0, resting, FILL);
       start();
     });
     visibility.observe(canvas);
@@ -1430,7 +1426,6 @@
       redraw: redrawStill,
       // Let the air out, or put it back.
       pump(to) {
-        target = to;
         if (held()) {   // no frames to breathe with, so it lands at once
           air = null;
           resting = to;
