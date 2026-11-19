@@ -609,7 +609,7 @@
       saidText.hidden = !text;
     }
 
-    function updateWind(t, dt) {
+    function updateWind(t, dt, since = dt) {
       if (t > gust.start + gust.dur) {
         gust = {
           start: t + 2 + Math.random() * 5,
@@ -625,7 +625,10 @@
       const now = window.scrollY;
       // per second rather than per frame: the same flick of the page has to
       // blow the same whether the screen runs at 60Hz or 120
-      const moved = scrolledAt === null || dt <= 0 ? 0 : (now - scrolledAt) / dt;
+      // Measured against the time that really passed, not the clamped step:
+      // the pixels moved cover the whole of a slow frame, so dividing by the
+      // clamp would read a janky frame as a gale.
+      const moved = scrolledAt === null || since <= 0 ? 0 : (now - scrolledAt) / since;
       scrolledAt = now;
       const blown = Math.max(-1, Math.min(1, moved / SCROLL_FULL));
       // rises with the scroll at once, falls back slowly: a gust, not a switch
@@ -1403,7 +1406,8 @@
 
     function frame(now) {
       // clamp dt so a backgrounded tab doesn't jump the animation on return
-      const dt = Math.min((now - last) / 1000, 0.05);
+      const since = (now - last) / 1000;
+      const dt = Math.min(since, 0.05);
       frameDt = dt;
       last = now;
       t += dt * Math.max(0, cfg.speed);  // a negative speed would stall the scheduling
@@ -1411,7 +1415,7 @@
       punch = Math.max(0, punch - dt * 0.7);
       // ResizeObserver misses a move to a screen with a different pixel density
       if ((window.devicePixelRatio || 1) !== lastDpr) resize();
-      updateWind(t, dt);
+      updateWind(t, dt, since);
       updateLift(t);
       render();
       raf = requestAnimationFrame(frame);
@@ -1555,7 +1559,16 @@
     keepHours() {
       clearInterval(this.clock);
       this.clock = null;
-      if (!this.cfg.hours) return;
+      // An attribute can be set before the element is in a page, and a
+      // timer started then would outlive it: nothing would clear it, and it
+      // would hold the element from being collected.
+      if (!this.isConnected) return;
+      if (!this.cfg.hours) {
+        // Taking the hours away gives the dancer back, rather than leaving it
+        // flat with nothing left to open it again.
+        this.anim?.pump(1);
+        return;
+      }
       const check = () => this.anim?.pump(openNow(this.cfg.hours) ? 1 : 0);
       check();
       // a minute is close enough for a thing that changes twice a day
