@@ -158,6 +158,9 @@ h1, h2, button, .mark { font-family: Fredoka, Nunito, system-ui, sans-serif; }
 
 .brand { display: flex; align-items: center; gap: 11px; }
 .brand h1 { flex: 1; margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 0.01em; }
+/* undo, redo and reset sit beside the tagline rather than crowd the title */
+.tagline { display: flex; align-items: center; gap: 11px; }
+.steps { flex: none; display: flex; gap: 5px; margin-left: auto; }
 #panel-head p { margin: 0; font-size: 13px; color: var(--muted); }
 
 .mark {
