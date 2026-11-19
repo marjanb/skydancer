@@ -29,7 +29,6 @@
     href: '',         // where a click on the dancer leads; empty for nowhere
     sign: '',         // words in a speech bubble by the dancer; empty for none
     bubble: 'drawn',  // drawn | box | burst
-    closable: true,   // a dismiss button on the balloon; false leaves it to the page
   };
 
   const OFF = ['false', '0', 'no', 'off'];
@@ -90,15 +89,10 @@
     const spec = BUBBLES[key];
     let path, w, h;
 
-    // where the dismiss button sits: on the outline, up and to the right
-    const RIM = -0.7;
-    let rim;
-
     if (key === 'drawn') {
       path = new Path2D(BALLOON_D);
       w = 143;
       h = 78;
-      rim = { x: 132, y: 14 };
     } else {
       const toward = Math.atan2(tipY - cy, tipX - cx);
       const gap = 0.3;
@@ -116,12 +110,9 @@
       path.closePath();
       w = Math.max(...pts.map(q => q[0])) + 2;
       h = Math.max(...pts.map(q => q[1])) + 2;
-      // a spiky outline has no single edge, so sit the button between its points
-      const edge = spec.spikes ? 1 : spec.r(RIM);
-      rim = { x: cx + Math.cos(RIM) * rx * edge, y: cy + Math.sin(RIM) * ry * edge };
     }
 
-    built[key] = { path, w, h, rim, fit: spec.fit };
+    built[key] = { path, w, h, fit: spec.fit };
     return built[key];
   }
   // overshoot, so a new balloon springs past its size and settles back
@@ -284,7 +275,7 @@
     /* width follows height, so the embed crops to the dancer */
     :host {
       display: inline-block;
-      position: relative;   /* the words and the dismiss button hang off this */
+      position: relative;   /* the words and the link hang off this */
       vertical-align: middle;
       height: 400px;
       aspect-ratio: calc(${CROP_RATIO} + (var(--count, 1) - 1) * ${SPACING});
@@ -325,21 +316,6 @@
       overflow: hidden;
       clip-path: inset(50%);
       white-space: nowrap;
-    }
-    /* Sits exactly over the dismiss button painted on the canvas. It carries
-       no look of its own -- the circle underneath is the look -- it is there so
-       a pointer and a keyboard have the same thing to reach for. */
-    .dismiss {
-      position: absolute;
-      padding: 0;
-      border: 0;
-      border-radius: 50%;
-      background: none;
-      cursor: pointer;
-    }
-    .dismiss:focus-visible {
-      outline: 2px solid ${OUTLINE};
-      outline-offset: 2px;
     }
   `;
 
@@ -438,10 +414,10 @@
       const unit = canvas.clientHeight / REF_HEIGHT;
       gaze = unit ? { x: e.offsetX / unit, y: e.offsetY / unit } : null;
     }, { signal: events.signal });
-    // Watched on the widget rather than the canvas: the dismiss button and the
-    // link lie over the canvas, so moving onto either would read as leaving,
-    // and moving from one of them straight out would not read as leaving at
-    // all. The host's own bounds are what actually matter.
+    // Watched on the widget rather than the canvas: the link lies over the
+    // canvas, so moving onto it would read as leaving, and moving from it
+    // straight out would not read as leaving at all. The host's own bounds
+    // are what actually matter.
     canvas.getRootNode().host.addEventListener('pointerleave', () => {
       pointerWind = 0;
       gaze = null;   // nothing to watch, so the eyes go back to wandering
@@ -449,13 +425,10 @@
 
     // poking it knocks the air out: a kink now, and extra flailing that fades
     let punch = 0;
-    let closeAt = null;  // the balloon's dismiss button, in drawing units
-    let going = false;   // dismissed, and seeing the air out
 
     const root = canvas.getRootNode();
     const saidText = root.querySelector('.said');
     const blurted = root.querySelector('.blurted');
-    const dismiss = root.querySelector('.dismiss');
     const leadsTo = root.querySelector('.go');
 
     // Somewhere a link may actually go. `javascript:` is the one that matters:
@@ -517,26 +490,6 @@
     canvas.addEventListener('click', follow, { signal: events.signal });
     canvas.addEventListener('auxclick', e => { if (e.button === 1) follow(e); },
                             { signal: events.signal });
-
-    dismiss.addEventListener('click', () => {
-      const host = root.host;
-      // the page can take the dismissal over with preventDefault
-      // Out of reach from here on: the air takes a moment to go, and a second
-      // press in that moment would tell the page twice. placeDismiss puts the
-      // button back every frame, so it has to be told as well -- and a script
-      // can press a hidden button, so the flag is checked rather than trusted.
-      if (going) return;
-      going = true;
-      dismiss.hidden = true;
-      if (!host.dispatchEvent(new CustomEvent('close', { bubbles: true, cancelable: true }))) {
-        going = false;   // the page is handling it, so the button stays
-        return;
-      }
-      // the loop stops with the host, so it has to keep going until the air
-      // is out; a held pose has no clock for that and simply goes
-      if (held()) host.hidden = true;
-      else breathe(pressure(), 0, EMPTY, () => { host.hidden = true; });
-    }, { signal: events.signal });
 
     // A poke makes it blurt, and the word pops up beside it rather than going
     // into the balloon: the balloon is what the dancer is there to say, and a
@@ -627,19 +580,6 @@
       saidText.hidden = !text;
     }
 
-    // Keep the real button over the painted one. closeAt is in drawing units
-    // and the balloon drifts, so this follows it frame by frame.
-    function placeDismiss() {
-      const unit = canvas.clientHeight / REF_HEIGHT;
-      if (!closeAt || !unit || going) { dismiss.hidden = true; return; }
-      const r = closeAt.r * unit;
-      dismiss.hidden = false;
-      dismiss.style.left = `${closeAt.x * unit - r}px`;
-      dismiss.style.top = `${closeAt.y * unit - r}px`;
-      dismiss.style.width = `${r * 2}px`;
-      dismiss.style.height = `${r * 2}px`;
-    }
-
     function updateWind(t, dt) {
       if (t > gust.start + gust.dur) {
         gust = {
@@ -663,16 +603,14 @@
     // change the length. `lift` is the two together, for how slack it all is.
     let slump = 1, filled = 1;
 
-    // An arrival or a dismissal is the air going in or out: the tube fills
-    // from flat on the way in, and empties on the way out before it goes. Null
-    // when neither is happening, which is nearly always.
+    // An arrival is the air going in: the tube fills from flat on the way in.
+    // Null when nothing is filling or emptying, which is nearly always.
     const FILL = 0.9, EMPTY = 0.55;   // seconds
     let air = null;                   // { from, to, start, dur, then }
     let resting = 1;                  // where a finished breath left it
     // What the page has asked for, which only deflate() and inflate() change.
     // An arrival fills to this rather than to full, so a dancer deliberately
-    // let down does not stand up again the next time it scrolls into view --
-    // while one that was dismissed still arrives upright when it is shown.
+    // let down does not stand up again the next time it scrolls into view.
     let target = 1;
 
     function breathe(from, to, dur, then) {
@@ -712,7 +650,7 @@
 
     // Whatever is part way in or out finishes at once. A held pose has no
     // frames to breathe with, so without this a dancer paused mid-fill would
-    // stay half up, and one paused mid-dismissal would never go.
+    // stay half up.
     function settleAir() {
       if (!air) return;
       const { to, then } = air;
@@ -1354,37 +1292,6 @@
         ctx.fillText(shown, 0, (i - (lines.length - 1) / 2) * step);
       });
 
-      if (cfg.closable) {
-        // a dismiss button on the rim, always at the visual top right
-        const bx = side * (shape.rim.x - BALLOON.cx) * scale;
-        const by = (shape.rim.y - BALLOON.cy) * scale;
-        const r = 13 * scale;
-
-        ctx.lineWidth = Math.max(1.5, 3 * scale);
-        ctx.strokeStyle = OUTLINE;
-        ctx.fillStyle = '#fffdf6';
-        ctx.beginPath();
-        ctx.arc(bx, by, r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-
-        const arm = r * 0.42;
-        ctx.beginPath();
-        ctx.moveTo(bx - arm, by - arm);
-        ctx.lineTo(bx + arm, by + arm);
-        ctx.moveTo(bx + arm, by - arm);
-        ctx.lineTo(bx - arm, by + arm);
-        ctx.stroke();
-
-        // the button moved with the balloon, so the hit region has to follow it
-        const cos = Math.cos(tilt), sin = Math.sin(tilt);
-        closeAt = {
-          x: ax + (bx * cos - by * sin) * swell,
-          y: ay + (bx * sin + by * cos) * swell,
-          r: r * swell * 1.4,  // a little slack for fingers
-        };
-      }
-
       ctx.restore();
     }
 
@@ -1417,7 +1324,6 @@
                   String(cfg.placard ?? ''));
 
       const sign = phraseNow(t);
-      closeAt = null;
       if (sign && dancers.length) {
         // one balloon for the lot of them, floating over the middle of the group
         const heads = dancers.map(d => d.body[Math.round(BODY_SEGS * 0.9)]);
@@ -1434,7 +1340,6 @@
       }
       // what the canvas just painted, said again for anything that can't see it
       announce(sign);
-      placeDismiss();
       aimLink();
       labelLink(sign);
       // last of all, so a blurted word lands over everything else
@@ -1490,11 +1395,8 @@
       visible = entry.isIntersecting;
       // A held pose has no clock to fill by, so it just stands there. One
       // already part way in or out carries on from where it stopped: starting
-      // over would snap it flat, and replacing it would drop a dismissal.
-      if (coming && !held() && !air) {
-        going = false;   // shown again, so the button is back in play
-        breathe(0, target, FILL);
-      }
+      // over would snap it flat.
+      if (coming && !held() && !air) breathe(0, target, FILL);
       start();
     });
     visibility.observe(canvas);
@@ -1516,10 +1418,8 @@
     return {
       // only a held pose needs poking; a running loop picks changes up itself
       redraw: redrawStill,
-      // Let the air out, or put it back. A dismissal already on its way is
-      // left alone: it ends with the dancer gone, and that should win.
+      // Let the air out, or put it back.
       pump(to) {
-        if (going) return;   // a dismissal is already on its way out
         target = to;
         if (held()) {   // no frames to breathe with, so it lands at once
           air = null;
@@ -1555,14 +1455,13 @@
       const root = this.attachShadow({ mode: 'open' });
       root.innerHTML = `<style>${STYLE}</style>`
         // The canvas is decoration, so assistive tech is told to skip it. What
-        // it paints that is actually content -- the words on the sign, and the
-        // button that dismisses them -- gets a real element of its own.
+        // it paints that is actually content -- the words on the sign -- gets a
+        // real element of its own.
         + `<canvas aria-hidden="true"></canvas>`
         + `<p class="said" hidden></p>`
         // A blurted word is painted and then gone, so it needs saying as well
         // as showing. Polite, because it is an aside, not the point.
         + `<p class="said blurted" aria-live="polite"></p>`
-        + `<button class="dismiss" type="button" aria-label="Dismiss" hidden></button>`
         // A new tab, so a click never takes the reader off the page the dancer
         // is advertising. noopener keeps the opened page from reaching back
         // through window.opener.

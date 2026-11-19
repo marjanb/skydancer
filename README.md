@@ -35,15 +35,13 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `placard`    | none      | words on a board staked at the dancer's feet, which hold still |
 | `shout`      | none      | what it blurts when poked; the word pops up beside it and fades, leaving the sign alone. Divide several with `\|` (and `\|\|` for a literal one) and a poke takes one |
 | `bubble`     | `drawn`   | bubble shape: `drawn`, `box` or `burst`    |
-| `closable`   | `true`    | `false` drops the balloon's dismiss button |
 | `href`       | none      | where a click on the dancer leads, in a new tab; it also becomes a link that can be tabbed to |
 
 The `sign` attribute puts words in a hand-drawn speech balloon beside the dancer's head. It drifts rather than tracking the head, so the words stay readable.
 
 The canvas is marked `aria-hidden`, since it is decoration. The sign's words
 are mirrored into a visually hidden element, so a screen reader, the page's own
-find and a translator can all reach them, and the dismiss button is a real
-`<button>` you can tab to.
+find and a translator can all reach them.
 
 ## Theming from CSS
 
@@ -77,8 +75,6 @@ something goes wrong and rises when it comes right. It stays on show either
 way — a mood, not `hide()` and `show()` — and one left down stays down, even
 if it scrolls out of view and back. A held pose takes the change at once
 instead of breathing into it.
-
-The balloon carries a dismiss button. Clicking it fires a bubbling, cancelable `close` event and then hides the widget; call `preventDefault()` on that event to handle it yourself, or set `closable="false"` to drop the button.
 
 To show and hide a dancer, call `hide()` and `show()` on the element, or set the standard `hidden` property:
 

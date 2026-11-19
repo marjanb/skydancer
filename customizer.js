@@ -69,8 +69,6 @@ hideButton.addEventListener('click', () => {
   dancer.hide();
   showStageBar(false);
 });
-// the balloon's own close button hides it too
-dancer.addEventListener('close', () => { showStageBar(false); });
 restore.addEventListener('click', () => {
   dancer.show();
   showStageBar(true);
@@ -304,7 +302,6 @@ function apply(el) {
     .filter(input => !(input.dataset.key === 'href' && !input.value.trim()))
     .filter(input => !(['print', 'placard', 'shout'].includes(input.dataset.key)
                        && !input.value.trim()))
-    .filter(input => !(input.dataset.key === 'closable' && input.checked))
     .filter(input => !(input.dataset.key === 'variety' && !input.checked))
     .map(input => `${input.dataset.key}="${escapeAttr(readInput(input))}"`).join(' ');
   embedScript.value = `<script src="${CDN_URL}"></script>`;
@@ -419,7 +416,7 @@ for (const field of document.querySelectorAll('.hex')) {
 // dancer stands and the link, so there is a way home from a surprise or from a
 // link that carried something odd.
 document.getElementById('reset').addEventListener('click', () => {
-  // a dismissed dancer comes back first: it has no size to be centred by
+  // a hidden dancer comes back first: it has no size to be centred by
   // while it is hidden, and "the default dancer" is one you can see
   dancer.show();
   showStageBar(true);
