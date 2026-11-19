@@ -4,7 +4,7 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
-## Unreleased
+## v2.8.0 — 2026-11-19
 
 - `print` puts words down the body, the way a real one carries SALE or OPEN.
   Each letter turns with the tube, so the line bends as the dancer moves.
@@ -16,6 +16,8 @@ look when a dancer starts looking different.
   never the one it took last. A `shout` that already contains a pipe now
   splits there; `||` writes a literal one.
 - Words in the speech balloon type themselves out rather than appearing whole.
+- Customizer: undo, redo and reset moved off the title row, which had run
+  out of room for them.
 
 ## v2.7.0 — 2026-11-18
 
