@@ -121,8 +121,11 @@
 
   // Printed words get a hand-lettered face rather than the interface one: it
   // is a sign painted on cloth, not a label. All of these ship with an OS, so
-  // an embed pulls nothing down; `cursive` catches whatever is left.
-  const PRINT_FACE = `'Marker Felt', 'Comic Sans MS', 'Segoe Print', cursive`;
+  // an embed pulls nothing down. It ends on `sans-serif` rather than
+  // `cursive`: `cursive` always resolves to something, and on a machine with
+  // none of these that something can be a thin script no one can read at this
+  // size, where a plain sans is merely plainer.
+  const PRINT_FACE = `'Skia', 'Comic Sans MS', 'Trebuchet MS', sans-serif`;
 
   // A tube is stepped across its width in flat bands, u running from -1 at the
   // left edge to 1 at the right: brightest at the lit edge, bare base colour
