@@ -1106,16 +1106,26 @@
       if (w > room) { size *= room / w; face(); w = ctx.measureText(words).width + pad() * 2; }
       const h = size + pad();
       const foot = H - ground();
-      const post = girth * 0.5;
+      // tall enough that the frame clears the fan rather than hiding behind it
+      const post = girth * 1.15;
       const top = foot - post - h;
 
       ctx.save();
       ctx.lineWidth = 3;
       ctx.strokeStyle = OUTLINE;
-      // the stake first, so the board sits over where it enters the ground
+      // An A-frame, drawn first so the board sits over where the legs meet
+      // it: two splayed legs and a brace across them, which is what keeps a
+      // board like this upright on a forecourt.
+      // wider than the fan is, so the legs reach the ground beside it
+      const spread = Math.max(girth * 0.95, Math.min(w * 0.34, post));
+      const brace = foot - post * 0.42;
       ctx.beginPath();
-      ctx.moveTo(x, foot);
-      ctx.lineTo(x, top + h);
+      for (const side of [-1, 1]) {
+        ctx.moveTo(x + side * spread * 0.3, top + h);
+        ctx.lineTo(x + side * spread, foot);
+      }
+      ctx.moveTo(x - spread * 0.72, brace);
+      ctx.lineTo(x + spread * 0.72, brace);
       ctx.stroke();
 
       ctx.fillStyle = '#fffdf6';
