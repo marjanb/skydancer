@@ -119,6 +119,11 @@
   const springy = x => 1 + 2.7 * (x - 1) ** 3 + 1.7 * (x - 1) ** 2;
   const OUTLINE = '#1a1a2e';
 
+  // Printed words get a hand-lettered face rather than the interface one: it
+  // is a sign painted on cloth, not a label. All of these ship with an OS, so
+  // an embed pulls nothing down; `cursive` catches whatever is left.
+  const PRINT_FACE = `'Marker Felt', 'Comic Sans MS', 'Segoe Print', cursive`;
+
   // A tube is stepped across its width in flat bands, u running from -1 at the
   // left edge to 1 at the right: brightest at the lit edge, bare base colour
   // through the middle, deepest at the shaded one. Stepping it rather than
@@ -841,7 +846,7 @@
       const size = Math.min(width * 0.62, Math.max(step, 1) * segLen * 0.85);
       // heavier than the placard and the balloon: those are read close up,
       // while this has a moving, shaded tube under it to carry
-      ctx.font = `900 ${size}px system-ui, -apple-system, sans-serif`;
+      ctx.font = `900 ${size}px ${PRINT_FACE}`;
 
       letters.forEach((letter, i) => {
         const p = pts[Math.round(first - i * step)];
