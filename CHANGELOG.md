@@ -4,6 +4,15 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
+## Unreleased
+
+- `print` puts words down the body, the way a real one carries SALE or OPEN.
+  Each letter turns with the tube, so the line bends as the dancer moves.
+- `placard` stakes a board at its feet, for words that hold still while
+  everything above them thrashes.
+- `shout` is what a dancer blurts when poked, over whatever sign it carries.
+- Words in the speech balloon type themselves out rather than appearing whole.
+
 ## v2.7.0 — 2026-11-18
 
 - `deflate()` and `inflate()` let a page flop a dancer and stand it back up,

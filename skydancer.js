@@ -23,6 +23,9 @@
     variety: false,   // give a crowd a colour and a face each, instead of one look
     paused: false,    // hold the pose; the dancer stays on show, it just stops
     pattern: 'none',  // markings on the body: none | rings | spiral
+    print: '',        // words printed down the body, the way a real one carries them
+    placard: '',      // words on a board staked at the dancer's feet, which hold still
+    shout: '',        // what it says when poked, for a moment, over whatever sign it carries
     href: '',         // where a click on the dancer leads; empty for nowhere
     sign: '',         // words in a speech bubble by the dancer; empty for none
     bubble: 'drawn',  // drawn | box | burst
@@ -522,10 +525,14 @@
       else breathe(pressure(), 0, EMPTY, () => { host.hidden = true; });
     }, { signal: events.signal });
 
+    const SHOUT = 2.4;   // seconds a poked dancer keeps its word up
+    let shoutingTill = -1;
+
     function burst() {
       // without a running loop nothing would decay the punch, so it would be
       // saved up and spent the moment the dancer came back into view
       if (held() || !visible) return;
+      if (String(cfg.shout ?? '').trim()) shoutingTill = wall + SHOUT;
       punch = 1;
       kink = { start: t, dur: 0.9, dir: Math.random() < 0.5 ? -1 : 1, mag: 0.45 };
     }
@@ -829,6 +836,49 @@
       ctx.fill();
     }
 
+    // Words printed down the tube, the way a real one carries SALE or OPEN.
+    // Each letter sits at its own point on the chain and turns with it, so the
+    // line of text bends and ripples with the dancer instead of riding on top
+    // as a flat label. Drawn under the shading, so it catches the same light.
+    const PRINT_TOP = 0.74;    // clear of the face
+    const PRINT_FOOT = 0.14;   // clear of the fan, and of a placard staked there
+
+    function printDown(pts, width, text, ink) {
+      const n = pts.length - 1;
+      const first = Math.round(n * PRINT_TOP), last = Math.round(n * PRINT_FOOT);
+      const span = first - last;
+      if (span < 1) return;
+      // One letter per point on the chain and no more: past that they would
+      // land on the same place and stack up, so the rest is simply dropped.
+      const letters = [...text].filter(ch => ch !== '\n').slice(0, span + 1);
+      if (!letters.length) return;
+
+      ctx.fillStyle = ink;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      // The letters are spread over the whole run rather than packed from the
+      // top, so a short word reads down the tube instead of sitting on its
+      // shoulders. Their size follows the gap between them, capped by how
+      // much tube there is to print across.
+      const gaps = Math.max(1, letters.length - 1);
+      const step = letters.length > 1 ? span / gaps : 0;
+      const segLen = pts[1] ? dist(pts[0], pts[1]) : width;
+      const size = Math.min(width * 0.62, Math.max(step, 1) * segLen * 0.85);
+      ctx.font = `700 ${size}px system-ui, -apple-system, sans-serif`;
+
+      letters.forEach((letter, i) => {
+        const p = pts[Math.round(first - i * step)];
+        if (!p) return;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.a);
+        ctx.fillText(letter, 0, 0);
+        ctx.restore();
+      });
+    }
+
+    const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
     // Fabric markings, drawn on the bare colour so the shading goes over them
     // and they catch the same light the tube does. Clipped by the caller.
     //   rings   bands round the tube, the way a windsock is sewn
@@ -874,7 +924,7 @@
       ctx.stroke();
     }
 
-    function drawTube(pts, width, color, flat = 1, pattern = 'none', ink = color) {
+    function drawTube(pts, width, color, flat = 1, pattern = 'none', ink = color, print = '') {
       const end = pts[pts.length - 1];
       const r = width / 2;
       const trimming = flat < 1;
@@ -913,6 +963,7 @@
       ctx.save();
       ctx.clip(tubePath(pts, width, flat));
       if (pattern !== 'none') drawPattern(pts, width, pattern, ink);
+      if (print) printDown(pts, width, print, ink);
       for (let i = 0; i < TONES; i++) {
         const ink = tones[i];
         if (!ink) continue;  // the base colour already stands for the middle
@@ -1039,6 +1090,47 @@
       ctx.restore();
     }
 
+    // A board on a stake at the dancer's feet. Everything else here moves, so
+    // this is the one place words can sit and be read: it does not bob, lean
+    // or drift with the tube above it.
+    function drawPlacard(x, girth, text) {
+      const words = text.trim();
+      if (!words) return;
+      let size = Math.max(girth * 0.3, H * 0.026);
+      const face = () => { ctx.font = `700 ${size}px system-ui, -apple-system, sans-serif`; };
+      face();
+      // narrow enough to stay on the canvas, however much it has to say
+      const room = W * 0.86;
+      const pad = () => size * 0.7;
+      let w = ctx.measureText(words).width + pad() * 2;
+      if (w > room) { size *= room / w; face(); w = ctx.measureText(words).width + pad() * 2; }
+      const h = size + pad();
+      const foot = H - ground();
+      const post = girth * 0.5;
+      const top = foot - post - h;
+
+      ctx.save();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = OUTLINE;
+      // the stake first, so the board sits over where it enters the ground
+      ctx.beginPath();
+      ctx.moveTo(x, foot);
+      ctx.lineTo(x, top + h);
+      ctx.stroke();
+
+      ctx.fillStyle = '#fffdf6';
+      ctx.beginPath();
+      ctx.roundRect(x - w / 2, top, w, h, size * 0.28);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = OUTLINE;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(words, x, top + h / 2);
+      ctx.restore();
+    }
+
     function drawFan(x, g) {
       const w = g * 1.7, h = g * 0.55;
       ctx.fillStyle = '#3a3f4b';
@@ -1055,7 +1147,10 @@
     // The tail follows the same eased position, so it lags a little when the
     // balloon is gliding across to the dancer's other side.
     let drift = null;
-    let said = null, saidAt = 0;  // for the little pop when the words change
+    // for the little pop and the typing when the words change. Both are
+    // arrivals rather than part of the dance, so they go by the wall clock:
+    // at speed="0" the dance stands still, but words still have to appear.
+    let said = null, saidAt = 0;
     let sided = 1, placedX = null;  // which side the balloon sits on, and where it got to
 
     function drawBubble(at, speakFrom, girth, text) {
@@ -1130,9 +1225,11 @@
 
       // whimsy: it bobs, tilts and breathes, and springs in when the words
       // change. A still pose gets none of it: no loop, no implied movement.
-      if (text !== said) { said = text; saidAt = t; }
+      if (text !== said) { said = text; saidAt = wall; }
       const still = held();
-      const pop = still ? 1 : Math.min(1, (t - saidAt) / 0.4);
+      const pop = still ? 1 : Math.min(1, (wall - saidAt) / 0.4);
+      // the words arrive a little slower than the balloon does
+      const saying = still ? 1 : Math.min(1, (wall - saidAt) / 0.55);
       const swell = still ? 1
         : (pop < 1 ? 0.5 + 0.5 * springy(pop) : 1) * (1 + Math.sin(t * 2.3) * 0.02);
       const bob = still ? 0 : Math.sin(t * 1.7) * 5 * scale;
@@ -1163,7 +1260,16 @@
       ctx.fillStyle = OUTLINE;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      lines.forEach((line, i) => ctx.fillText(line, 0, (i - (lines.length - 1) / 2) * step));
+      // Typed out rather than appearing whole, so a rotating sign reads as
+      // being said. The wrap is worked out on the finished words, so nothing
+      // reflows as it arrives; only how much of it shows changes.
+      let left = still ? Infinity : Math.ceil(saying * text.length);
+      lines.forEach((line, i) => {
+        if (left <= 0) return;
+        const shown = left >= line.length ? line : line.slice(0, left);
+        left -= line.length + 1;   // the space the wrap ate counts as a beat
+        ctx.fillText(shown, 0, (i - (lines.length - 1) / 2) * step);
+      });
 
       if (cfg.closable) {
         // a dismiss button on the rim, always at the visual top right
@@ -1215,12 +1321,19 @@
         for (const strand of hair) strokeChain(strand, girth * 0.1 + 4, OUTLINE);
         for (const strand of hair) strokeChain(strand, girth * 0.1, look.accent);
         for (const arm of arms) drawTube(arm, girth * 0.38, look.accent);
-        drawTube(body, girth, look.color, FLAT, cfg.pattern, look.accent);
+        drawTube(body, girth, look.color, FLAT, cfg.pattern, look.accent,
+                 String(cfg.print ?? '').trim());
         drawFace(body[Math.round(BODY_SEGS * 0.87)], girth, t, look.face);
         drawFan(x, girth);
       }
 
-      const sign = phraseNow(t);
+      // one board for the lot of them, in front of their feet
+      drawPlacard(W / 2, Math.max(...dancers.map(d => d.girth)),
+                  String(cfg.placard ?? ''));
+
+      // a poke puts a word in its mouth, over whatever it was saying
+      const shout = String(cfg.shout ?? '').trim();
+      const sign = wall < shoutingTill && shout ? shout : phraseNow(t);
       closeAt = null;
       if (sign && dancers.length) {
         // one balloon for the lot of them, floating over the middle of the group

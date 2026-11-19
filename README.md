@@ -31,6 +31,9 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `variety`    | `false`   | `true` gives each dancer in a crowd its own colour, face, girth, arms and hair |
 | `paused`     | `false`   | `true` holds the pose; the dancer stays on show, it just stops |
 | `sign`       | none      | words in a speech bubble; divide several with `\|` and it works through them, 4s each. `\|\|` is a literal pipe |
+| `print`      | none      | words printed down the body, bending with the tube |
+| `placard`    | none      | words on a board staked at the dancer's feet, which hold still |
+| `shout`      | none      | what it blurts when poked, over whatever sign it carries |
 | `bubble`     | `drawn`   | bubble shape: `drawn`, `box` or `burst`    |
 | `closable`   | `true`    | `false` drops the balloon's dismiss button |
 | `href`       | none      | where a click on the dancer leads, in a new tab; it also becomes a link that can be tabbed to |
