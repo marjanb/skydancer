@@ -29,9 +29,24 @@
     href: '',         // where a click on the dancer leads; empty for nowhere
     sign: '',         // words in a speech bubble by the dancer; empty for none
     bubble: 'drawn',  // drawn | box | burst
+    hours: '',        // when it is worth dancing, as `9-17`; empty for always
   };
 
   const OFF = ['false', '0', 'no', 'off'];
+
+  // `9-17` is open from nine until five, and `22-6` runs through midnight.
+  // Outside them the fan is off and the dancer lies flat. Anything that is not
+  // two numbers is no hours at all, so a typo leaves a dancer that works.
+  function openNow(spec, at = new Date()) {
+    const m = /^\s*(\d{1,2})\s*-\s*(\d{1,2})\s*$/.exec(String(spec ?? ''));
+    if (!m) return true;
+    const [from, to] = [+m[1], +m[2]];
+    if (from > 24 || to > 24 || from === to) return true;
+    // the hour it is now, with the minutes, so it closes on the hour and not
+    // at some point during it
+    const h = at.getHours() + at.getMinutes() / 60;
+    return from < to ? h >= from && h < to : h >= from || h < to;
+  }
 
   const attrName = key => key.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`);
   const KEYS = Object.keys(DEFAULTS);
@@ -415,8 +430,8 @@
     // dancer is blown along with it. Sampled per frame from the scroll
     // position rather than from scroll events, so a smooth scroll, a flick and
     // a jump all read the same, and standing still reads as nothing at all.
-    const SCROLL_FULL = 55;   // px in one frame for all the wind there is
-    let scrolledAt = null;    // where the page was last frame
+    const SCROLL_FULL = 3300;  // px a second for all the wind there is
+    let scrolledAt = null;     // where the page was last frame
     let scrollWind = 0;
 
     // where the pointer is, in drawing units, for the eyes to find
@@ -607,8 +622,10 @@
       // Down the page blows it right, up blows it left. The reading is taken
       // once a frame and eased, so it builds while the scroll runs and falls
       // away on its own when it stops.
-      const now = scrollY;
-      const moved = scrolledAt === null ? 0 : now - scrolledAt;
+      const now = window.scrollY;
+      // per second rather than per frame: the same flick of the page has to
+      // blow the same whether the screen runs at 60Hz or 120
+      const moved = scrolledAt === null || dt <= 0 ? 0 : (now - scrolledAt) / dt;
       scrolledAt = now;
       const blown = Math.max(-1, Math.min(1, moved / SCROLL_FULL));
       // rises with the scroll at once, falls back slowly: a gust, not a switch
@@ -1402,12 +1419,15 @@
 
     function start() {
       cancelAnimationFrame(raf);
+      // Whatever stopped the loop -- going off screen, a held pose -- the page
+      // went on scrolling without it. Measuring from where it last looked
+      // would make all of that one gust on the frame it comes back.
+      scrolledAt = null;
       if (!visible) return;
       // Held either because the page asked or because the reader did. Either
       // way there is no loop, so the pose is drawn once and left.
       if (held()) {
         punch = 0;  // nothing will decay it while the pose is held
-        scrolledAt = null;   // no frames to measure the page going by with
         shouts = [];    // nor any clock to fade a blurted word out with
         blurted.textContent = '';   // which is what would have cleared this
         settleAir();    // no frames to breathe with, so finish it now
@@ -1505,6 +1525,7 @@
       // what it resolves to
       if (key === 'color' || key === 'accent') this.anim?.rereadTheme();
       if (key === 'paused') this.anim?.hold();
+      if (key === 'hours') this.keepHours();
       this.anim?.redraw();
     }
 
@@ -1527,12 +1548,29 @@
     deflate() { this.anim?.pump(0); }
     inflate() { this.anim?.pump(1); }
 
+    // Opening hours, for the shop front this is really a sign for: the air
+    // goes out at closing time and back in when it opens. A page may still
+    // call deflate() or inflate() in between, but the next look at the clock
+    // puts it back where the hours say, within the minute.
+    keepHours() {
+      clearInterval(this.clock);
+      this.clock = null;
+      if (!this.cfg.hours) return;
+      const check = () => this.anim?.pump(openNow(this.cfg.hours) ? 1 : 0);
+      check();
+      // a minute is close enough for a thing that changes twice a day
+      this.clock = setInterval(check, 60000);
+    }
+
     connectedCallback() {
       this.syncCount();
       this.anim = animate(this.canvas, this.cfg);
+      this.keepHours();
     }
 
     disconnectedCallback() {
+      clearInterval(this.clock);
+      this.clock = null;
       this.anim.stop();
       this.anim = null;   // the optional calls above cope, and nothing is held
     }

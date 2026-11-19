@@ -24,6 +24,7 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `speed`      | `1`       | animation speed                            |
 | `wildness`   | `1`       | how much it flails                         |
 | `wind`       | `1`       | wind strength; `0` is calm. Scales the gusts, the pointer, and the page scrolling past |
+| `hours`      | none      | when it is worth dancing, as `9-17`; `22-6` runs through midnight. Outside them the air is out and the dancer lies flat |
 | `face`       | `happy`   | `happy`, `surprised`, `cool`, `wink`, `joy`, `sleepy` or `angry` |
 | `pattern`    | `none`    | markings on the body: `none`, `rings` or `spiral` |
 | `hair`       | `true`    | `false` hides the hair                     |
@@ -75,6 +76,10 @@ something goes wrong and rises when it comes right. It stays on show either
 way — a mood, not `hide()` and `show()` — and one left down stays down, even
 if it scrolls out of view and back. A held pose takes the change at once
 instead of breathing into it.
+
+The page's own scroll is what counts: a dancer inside a scrolling container, or in an iframe whose parent is what scrolls, is not blown by it. A jump to an anchor or to the end of the page reads as one gust rather than as the distance travelled, and a reflow above the viewport can stir it as a scroll would.
+
+`hours` is read from the reader's own clock, not the shop's, so a visitor in another timezone sees their own hours. The page may still call `deflate()` or `inflate()` in between, and the next check puts it back where the hours say within the minute.
 
 To show and hide a dancer, call `hide()` and `show()` on the element, or set the standard `hidden` property:
 

@@ -9,7 +9,11 @@ look when a dancer starts looking different.
 - The page scrolling past is wind: a dancer is blown along with it, right
   going down and left going up, and settles when the scrolling stops. It
   scales with `wind` like everything else, so `wind="0"` ignores it, and a
-  paused dancer or a reader who asked for less motion never sees it.
+  paused dancer or a reader who asked for less motion never sees it. Only
+  the page's own scroll counts, not a scrolling container's.
+- `hours` gives a dancer opening times, as `9-17`, or `22-6` to run through
+  midnight. Outside them the air is out and it lies flat, which is what a
+  real one does when the fan goes off. It reads the reader's own clock.
 
 ## v2.9.1 — 2026-11-19
 
