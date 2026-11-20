@@ -4,6 +4,13 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
+## Unreleased
+
+- **Fixed:** a dancer stood up at full height on load instead of filling
+  with air as it arrived. v2.10.0's opening hours took a breath on every
+  connect, and the arrival fill only runs when nothing else is breathing.
+- Customizer: a field for `hours`, under Wind.
+
 ## v2.10.0 — 2026-11-20
 
 - The page scrolling past is wind: a dancer is blown along with it, right

@@ -1565,10 +1565,15 @@
       if (!this.isConnected) return;
       if (!this.cfg.hours) {
         // Taking the hours away gives the dancer back, rather than leaving it
-        // flat with nothing left to open it again.
-        this.anim?.pump(1);
+        // flat with nothing left to open it again -- but only when there were
+        // hours holding it down. On a first look there is nothing to undo, and
+        // a breath started here would rob the dancer of its arrival: the fill
+        // only runs when nothing else is already breathing.
+        if (this.kept) this.anim?.pump(1);
+        this.kept = false;
         return;
       }
+      this.kept = true;
       const check = () => this.anim?.pump(openNow(this.cfg.hours) ? 1 : 0);
       check();
       // a minute is close enough for a thing that changes twice a day

@@ -300,7 +300,7 @@ function apply(el) {
     .filter(input => !(input.dataset.key === 'count' && +input.value === 1))
     .filter(input => !(input.dataset.key === 'sign' && !input.value.trim()))
     .filter(input => !(input.dataset.key === 'href' && !input.value.trim()))
-    .filter(input => !(['print', 'placard', 'shout'].includes(input.dataset.key)
+    .filter(input => !(['print', 'placard', 'shout', 'hours'].includes(input.dataset.key)
                        && !input.value.trim()))
     .filter(input => !(input.dataset.key === 'variety' && !input.checked))
     .map(input => `${input.dataset.key}="${escapeAttr(readInput(input))}"`).join(' ');
