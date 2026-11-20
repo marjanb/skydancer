@@ -13,19 +13,51 @@ An animated inflatable tube man as an embeddable web widget. It is transparent, 
 <sky-dancer color="#7d3cff" accent="#00e0c6" face="cool" style="height: 500px"></sky-dancer>
 ```
 
-With a bundler, install it and import it once instead -- for its side effect,
-since importing is what registers `<sky-dancer>`:
+### From npm
 
 ```sh
 npm install skydancer
 ```
 
+Import it once, anywhere that runs before the markup does. There is nothing to
+call and nothing to configure: importing is what registers `<sky-dancer>`.
+
 ```js
 import 'skydancer';
 ```
 
-It is the same file either way: no build step, no dependencies, and nothing to
-call once it is in.
+After that it is an ordinary tag, so it works in whatever renders your HTML:
+
+```jsx
+import { useRef } from 'react';
+import 'skydancer';
+
+export function Storefront() {
+  const dancer = useRef(null);
+
+  return (
+    <>
+      <sky-dancer
+        ref={dancer}
+        color="#e8452c"
+        accent="#ffd60a"
+        print="SALE"
+        placard="Open till 8"
+        hours="9-17"
+        style={{ height: 420 }}
+      />
+      <button onClick={() => dancer.current.cheer()}>We made a sale</button>
+    </>
+  );
+}
+```
+
+Every attribute is a plain string, so nothing needs a wrapper to pass one, and
+the methods -- `cheer()`, `deflate()`, `inflate()`, `hide()`, `show()` -- are on
+the element itself. Importing where there is no browser, as when a page is
+rendered on a server, does nothing rather than throwing.
+
+It is the same file either way: no build step, no dependencies.
 
 The widget is 400px tall by default and crops to the dancer: its width follows its height (1.4x, plus a little per extra dancer), so it sits inline like an image rather than filling the page. Size it with CSS -- set the height and the width follows, or set both to override the crop. The dancer scales with the height and keeps its proportions.
 
