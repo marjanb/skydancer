@@ -4,6 +4,14 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
+## Unreleased
+
+- The package carries its own types, so `querySelector('sky-dancer')` is the
+  element rather than a bare `HTMLElement`, and the attributes are written
+  down where an editor can offer them. No JSX declaration, since typing an
+  intrinsic element means naming a framework's own types and nobody should
+  have to carry those to install a tube man.
+
 ## v2.11.0 — 2026-11-20
 
 - A dancer with something to `shout` can be poked from a keyboard: it carries

@@ -28,36 +28,22 @@ import 'skydancer';
 
 After that it is an ordinary tag, so it works in whatever renders your HTML:
 
-```jsx
-import { useRef } from 'react';
-import 'skydancer';
-
-export function Storefront() {
-  const dancer = useRef(null);
-
-  return (
-    <>
-      <sky-dancer
-        ref={dancer}
-        color="#e8452c"
-        accent="#ffd60a"
-        print="SALE"
-        placard="Open till 8"
-        hours="9-17"
-        style={{ height: 420 }}
-      />
-      <button onClick={() => dancer.current.cheer()}>We made a sale</button>
-    </>
-  );
-}
+```html
+<sky-dancer color="#e8452c" accent="#ffd60a" print="SALE"
+            placard="Open till 8" hours="9-17" style="height: 420px"></sky-dancer>
 ```
 
-Every attribute is a plain string, so nothing needs a wrapper to pass one, and
-the methods -- `cheer()`, `deflate()`, `inflate()`, `hide()`, `show()` -- are on
-the element itself. Importing where there is no browser, as when a page is
-rendered on a server, does nothing rather than throwing.
+```js
+// the methods are on the element, so a reference to it is all you need
+document.querySelector('sky-dancer').cheer();
+```
 
-It is the same file either way: no build step, no dependencies.
+Every attribute is a plain string, so nothing needs a wrapper to pass one.
+Importing where there is no browser, as when a page is rendered on a server,
+does nothing rather than throwing.
+
+It is the same file either way: no build step, no dependencies. Types come
+with it, so `querySelector('sky-dancer')` knows what it has found.
 
 The widget is 400px tall by default and crops to the dancer: its width follows its height (1.4x, plus a little per extra dancer), so it sits inline like an image rather than filling the page. Size it with CSS -- set the height and the width follows, or set both to override the crop. The dancer scales with the height and keeps its proportions.
 

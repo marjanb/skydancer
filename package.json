@@ -21,7 +21,10 @@
   "author": "Marjan Bajc",
   "type": "module",
   "exports": {
-    ".": "./skydancer.js"
+    ".": {
+      "types": "./skydancer.d.ts",
+      "default": "./skydancer.js"
+    }
   },
   "main": "./skydancer.js",
   "module": "./skydancer.js",
@@ -29,6 +32,7 @@
   "jsdelivr": "./skydancer.js",
   "files": [
     "skydancer.js",
+    "skydancer.d.ts",
     "README.md",
     "CHANGELOG.md",
     "LICENSE"
@@ -36,5 +40,6 @@
   "sideEffects": true,
   "engines": {
     "node": ">=18"
-  }
+  },
+  "types": "./skydancer.d.ts"
 }
