@@ -4,6 +4,14 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
+## Unreleased
+
+- **Fixed:** a dancer with `hours` came back from off screen already
+  standing instead of filling. The hours ask for the same thing every
+  minute, and off screen there is no loop to finish the breath that
+  started; an arrival only fills when nothing else is breathing. Asking
+  for what it is already doing is no longer a breath at all.
+
 ## v2.10.1 — 2026-11-20
 
 - **Fixed:** a dancer stood up at full height on load instead of filling

@@ -1479,6 +1479,12 @@
           updateLift(t);
           return render();
         }
+        // Asking for what it is already doing is not a breath. It matters
+        // off screen, where there is no loop to finish one: a pointless
+        // breath would sit there unfinished, and an arrival only fills when
+        // nothing else is breathing, so the dancer would come back already
+        // standing. The hours ask for the same thing every minute.
+        if (to === (air ? air.to : resting)) return;
         breathe(pressure(), to, to ? FILL : EMPTY);
       },
       // starting or stopping is the one change that has to reach the loop
@@ -1504,6 +1510,8 @@
     constructor() {
       super();
       this.cfg = Object.fromEntries(KEYS.map(key => [key, parse(key, this.getAttribute(attrName(key)))]));
+      this.clock = null;   // the minute hand for `hours`, when it has any
+      this.kept = false;   // whether hours were the thing holding it down
       const root = this.attachShadow({ mode: 'open' });
       root.innerHTML = `<style>${STYLE}</style>`
         // The canvas is decoration, so assistive tech is told to skip it. What
