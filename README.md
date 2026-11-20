@@ -1,6 +1,6 @@
 # Skydancer
 
-![Three skydancers side by side](docs/preview.png)
+![Three skydancers side by side: one with SALE printed down it and a placard at its feet, one with a speech bubble, one with a spiral](docs/preview.png)
 
 **[Try it live](https://marjanb.github.io/skydancer/)** - tweak one and copy its embed code.
 
