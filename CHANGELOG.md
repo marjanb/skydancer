@@ -4,7 +4,7 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
-## Unreleased
+## v2.10.1 — 2026-11-20
 
 - **Fixed:** a dancer stood up at full height on load instead of filling
   with air as it arrived. v2.10.0's opening hours took a breath on every
