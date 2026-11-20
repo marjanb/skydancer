@@ -32,6 +32,20 @@ if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
   exit 1
 fi
 
+# The package's version is the tag's, and nothing else sets it: left to a
+# human it drifts, and npm would carry a version the tag never saw.
+if [[ $(node -p 'require("./package.json").version') != "${tag#v}" ]]; then
+  node -e '
+    const fs = require("fs");
+    const p = JSON.parse(fs.readFileSync("package.json", "utf8"));
+    p.version = process.argv[1];
+    fs.writeFileSync("package.json", JSON.stringify(p, null, 2) + "\n");
+  ' "${tag#v}"
+  git add package.json
+  git commit -q -m "Set the package version to $tag"
+  echo "package.json set to ${tag#v}"
+fi
+
 # drop the local tag again if either push fails, so a rerun isn't blocked by it
 trap 'git tag -d "$tag" >/dev/null 2>&1 || true' ERR
 git tag "$tag"

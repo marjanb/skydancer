@@ -4,6 +4,13 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
+## Unreleased
+
+- The widget is an npm package as well as a script tag: `npm install
+  skydancer`, then `import 'skydancer'` once to register the element. It is
+  the same file either way -- it already loaded as a module, so there is no
+  second build and nothing to keep in step.
+
 ## v2.10.2 — 2026-11-20
 
 - **Fixed:** a dancer with `hours` came back from off screen already

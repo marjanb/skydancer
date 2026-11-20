@@ -1,0 +1,40 @@
+{
+  "name": "skydancer",
+  "version": "2.10.2",
+  "description": "An embeddable inflatable tube dancer, as a custom element. Vanilla canvas, no dependencies.",
+  "keywords": [
+    "custom-element",
+    "web-component",
+    "canvas",
+    "animation",
+    "widget",
+    "skydancer",
+    "tube-man"
+  ],
+  "homepage": "https://marjanb.github.io/skydancer/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marjanb/skydancer.git"
+  },
+  "bugs": "https://github.com/marjanb/skydancer/issues",
+  "license": "MIT",
+  "author": "Marjan Bajc",
+  "type": "module",
+  "exports": {
+    ".": "./skydancer.js"
+  },
+  "main": "./skydancer.js",
+  "module": "./skydancer.js",
+  "unpkg": "./skydancer.js",
+  "jsdelivr": "./skydancer.js",
+  "files": [
+    "skydancer.js",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "sideEffects": true,
+  "engines": {
+    "node": ">=18"
+  }
+}
