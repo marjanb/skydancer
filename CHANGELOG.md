@@ -4,7 +4,7 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
-## Unreleased
+## v2.10.0 — 2026-11-20
 
 - The page scrolling past is wind: a dancer is blown along with it, right
   going down and left going up, and settles when the scrolling stops. It
