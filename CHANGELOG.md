@@ -4,7 +4,7 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
-## Unreleased
+## v2.11.0 — 2026-11-20
 
 - A dancer with something to `shout` can be poked from a keyboard: it carries
   a button that does what a poke does, hidden until it is tabbed to. Offered
