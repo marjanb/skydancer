@@ -6,6 +6,10 @@ look when a dancer starts looking different.
 
 ## Unreleased
 
+- A dancer with something to `shout` can be poked from a keyboard: it carries
+  a button that does what a poke does, hidden until it is tabbed to. Offered
+  only when a poke would be worth taking, so a decorative dancer still costs
+  the page no tab stop.
 - The widget is an npm package as well as a script tag: `npm install
   skydancer`, then `import 'skydancer'` once to register the element. It is
   the same file either way -- it already loaded as a module, so there is no

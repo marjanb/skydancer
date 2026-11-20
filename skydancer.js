@@ -327,6 +327,26 @@
     }
     canvas.leads { cursor: pointer; }
 
+    /* Poking is a pointer gesture, and a pointer is not the only way in. This
+       is the same control as a poke, reachable by tab; a button answers Enter
+       and Space by itself, so there is no key handling to get wrong. */
+    .poke {
+      position: absolute;
+      left: 0;
+      top: 0;
+      font: inherit;
+      color: inherit;
+    }
+    .poke:not(:focus-visible) {
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      border: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
     /* The sign's words, for anything that reads rather than looks: a screen
        reader, the page's own find, a translator. The canvas only paints them. */
     .said {
@@ -459,6 +479,7 @@
     const saidText = root.querySelector('.said');
     const blurted = root.querySelector('.blurted');
     const leadsTo = root.querySelector('.go');
+    const pokeButton = root.querySelector('.poke');
 
     // Somewhere a link may actually go. `javascript:` is the one that matters:
     // the destination can reach this widget from a page's own templating or
@@ -566,6 +587,21 @@
     }
 
     canvas.addEventListener('pointerdown', burst, { signal: events.signal });
+    pokeButton.addEventListener('click', burst, { signal: events.signal });
+
+    // Only offered when a poke has something to say, and when a poke would do
+    // anything at all. A dancer is decoration, and a decorative one that is
+    // merely wiggled has nothing to report to a reader who cannot see it -- so
+    // it stays out of the page's tab order rather than costing a stop per
+    // embed for a flourish. A held pose swallows a poke, so it offers none.
+    let offering = null;
+    function offerPoke() {
+      const worth = phrasesOf(cfg.shout).length > 0 && !held();
+      if (worth === offering) return;
+      offering = worth;
+      pokeButton.hidden = !worth;
+      if (worth) pokeButton.textContent = 'Poke the dancer';
+    }
 
     // A page can theme the dancer in CSS rather than in attributes, which is
     // how it follows a light and a dark scheme without the embed being
@@ -1390,6 +1426,7 @@
       announce(sign);
       aimLink();
       labelLink(sign);
+      offerPoke();
       // last of all, so a blurted word lands over everything else
       drawShouts(widest);
     }
@@ -1525,7 +1562,9 @@
         // A new tab, so a click never takes the reader off the page the dancer
         // is advertising. noopener keeps the opened page from reaching back
         // through window.opener.
-        + `<a class="go" target="_blank" rel="noopener noreferrer" hidden></a>`;
+        + `<a class="go" target="_blank" rel="noopener noreferrer" hidden></a>`
+        // The poke a pointer gives it, for anything that is not a pointer.
+        + `<button class="poke" type="button" hidden></button>`;
       this.canvas = root.querySelector('canvas');
     }
 

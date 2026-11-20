@@ -54,6 +54,12 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 
 The `sign` attribute puts words in a hand-drawn speech balloon beside the dancer's head. It drifts rather than tracking the head, so the words stay readable.
 
+A poke is a pointer gesture, so a dancer with something to `shout` also
+carries a button that does the same, hidden until it is tabbed to. It is
+offered only when a poke would be worth taking -- there are words to hear and
+the dancer is not held -- so a purely decorative one costs the page no tab
+stop.
+
 The canvas is marked `aria-hidden`, since it is decoration. The sign's words
 are mirrored into a visually hidden element, so a screen reader, the page's own
 find and a translator can all reach them.
