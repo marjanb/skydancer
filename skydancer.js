@@ -34,7 +34,6 @@
     sign: '',         // words in a speech bubble by the dancer; empty for none
     bubble: 'drawn',  // drawn | box | burst
     hours: '',        // when it is worth dancing, as `9-17`; empty for always
-    shape: 'classic', // classic | one-arm
   };
 
   const OFF = ['false', '0', 'no', 'off'];
@@ -825,10 +824,7 @@
         w * (0.05 * Math.sin(t * 2.1 - u * 5) + 0.035 * Math.sin(t * 3.7 - u * 9 + 1.3)) * (0.3 + u) + kinkBend(u, t) * limp * look.flail + wind * 0.03 + droop);
 
       const shoulder = body[Math.round(BODY_SEGS * 0.66)];
-      // The one-armed sort really is sold that way, and it is the one look
-      // the other settings cannot reach: a short arm is still two arms.
-      const sides = cfg.shape === 'one-arm' ? [1] : [-1, 1];
-      const arms = sides.map(side =>
+      const arms = [-1, 1].map(side =>
         chain(shoulder.x, shoulder.y,
           shoulder.a + side * (1.1 + w * 0.4 * Math.sin(t * 2.6 + side)),
           ARM_SEGS, height * cfg.armLength * look.arms / ARM_SEGS, (v, a) =>

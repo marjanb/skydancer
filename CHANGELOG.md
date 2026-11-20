@@ -6,9 +6,6 @@ look when a dancer starts looking different.
 
 ## Unreleased
 
-- `shape="one-arm"` gives the one-armed sort, which is really sold that way.
-  It is the one look the other settings cannot reach, since a short arm is
-  still two arms.
 - A dancer with something to `shout` can be poked from a keyboard: it carries
   a button that does what a poke does, hidden until it is tabbed to. Offered
   only when a poke would be worth taking, so a decorative dancer still costs
