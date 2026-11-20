@@ -5,6 +5,11 @@
 #
 # Embeds use a floating major link (@1, @2, ...). Without the purge they keep
 # the old file for up to about a week.
+#
+# Pushing the tag is also what publishes to npm: .github/workflows/publish.yml
+# picks it up. That wants an NPM_TOKEN secret on the repository -- a granular
+# token with publish rights to this package and "bypass 2FA" enabled, since a
+# passkey cannot be answered from a runner.
 set -euo pipefail
 
 REPO=marjanb/skydancer

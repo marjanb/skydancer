@@ -6,6 +6,9 @@ look when a dancer starts looking different.
 
 ## Unreleased
 
+- Pushing a version tag publishes to npm, with provenance, instead of it
+  being done by hand. The tag and `package.json` have to agree or the run
+  stops.
 - The package carries its own types, so `querySelector('sky-dancer')` is the
   element rather than a bare `HTMLElement`, and the attributes are written
   down where an editor can offer them. No JSX declaration, since typing an

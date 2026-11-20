@@ -1,0 +1,55 @@
+# Publishes to npm when a version tag is pushed, so `./release.sh v2.12.0` is
+# the whole of a release again. Doing it by hand needs a passkey, which cannot
+# be answered from a script -- the first attempt at it left a placeholder
+# version on the registry that had to be unpublished.
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # npm's provenance is signed with a token minted for this run, which is
+      # what lets the registry say the tarball came from this workflow at this
+      # commit rather than off someone's laptop.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      # The tag is what says which version this is. If package.json disagrees,
+      # the tag and the package would part company the moment this ran, so it
+      # stops rather than publishing something nobody asked for.
+      - name: Check the version against the tag
+        run: |
+          tagged="${GITHUB_REF_NAME#v}"
+          packed=$(node -p 'require("./package.json").version')
+          if [[ "$tagged" != "$packed" ]]; then
+            echo "tag $GITHUB_REF_NAME says $tagged, package.json says $packed" >&2
+            exit 1
+          fi
+          echo "both say $packed"
+
+      # Catches a syntax error before it reaches the registry, where a version
+      # can never be replaced.
+      - name: Check the widget parses
+        run: node --check skydancer.js
+
+      # An import away from a browser has to be a no-op rather than a crash,
+      # which is the whole reason the file guards itself.
+      - name: Check it imports without a DOM
+        run: node --input-type=module -e "await import('./skydancer.js')"
+
+      - name: Publish
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
