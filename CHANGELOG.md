@@ -6,10 +6,16 @@ look when a dancer starts looking different.
 
 ## Unreleased
 
+- `shape="one-arm"` gives the one-armed sort, which is really sold that way.
+  It is the one look the other settings cannot reach, since a short arm is
+  still two arms.
 - A dancer with something to `shout` can be poked from a keyboard: it carries
   a button that does what a poke does, hidden until it is tabbed to. Offered
   only when a poke would be worth taking, so a decorative dancer still costs
   the page no tab stop.
+- Importing the widget where there is no browser -- a page being rendered on
+  a server -- does nothing instead of throwing, so a framework can pull it
+  in beside the markup that uses it.
 - The widget is an npm package as well as a script tag: `npm install
   skydancer`, then `import 'skydancer'` once to register the element. It is
   the same file either way -- it already loaded as a module, so there is no
