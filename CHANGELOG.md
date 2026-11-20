@@ -4,7 +4,7 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
-## Unreleased
+## v2.12.0 — 2026-11-20
 
 - Pushing a version tag publishes to npm, with provenance, instead of it
   being done by hand. The tag and `package.json` have to agree or the run
