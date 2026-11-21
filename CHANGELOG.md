@@ -6,6 +6,9 @@ look when a dancer starts looking different.
 
 ## Unreleased
 
+- `link-label` and `poke-label` say the two bits of wording a reader meets
+  rather than sees. They were English only, which on a page in another
+  language was the only English a screen reader hit.
 - **Fixed:** a negative `girth` asked the canvas for a negative radius and
   threw on every frame, leaving nothing on screen; an enormous one left
   nothing on screen either. Numbers that have a sensible range are held to

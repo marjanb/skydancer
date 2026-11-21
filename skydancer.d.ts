@@ -79,6 +79,12 @@ export interface SkyDancerAttributes {
   sign?: string;
   /** The balloon's shape. Default `drawn`. */
   bubble?: SkyDancerBubble;
+  /** What the link is called when the sign says nothing. English `Find out
+   * more` when unset. */
+  'link-label'?: string;
+  /** What the poke button is called. English `Poke the dancer` when
+   * unset. */
+  'poke-label'?: string;
   /** When it is worth dancing, as `9-17`; `22-6` runs through midnight.
    * Outside them the air is out and it lies flat. Read from the reader's own
    * clock. Empty means always. */

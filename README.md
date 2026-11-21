@@ -56,6 +56,8 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `speed`      | `1`       | animation speed                            |
 | `wildness`   | `1`       | how much it flails                         |
 | `wind`       | `1`       | wind strength; `0` is calm. Scales the gusts, the pointer, and the page scrolling past |
+| `link-label` | none      | what the link is called when the sign says nothing; English `Find out more` otherwise |
+| `poke-label` | none      | what the poke button is called; English `Poke the dancer` otherwise |
 | `hours`      | none      | when it is worth dancing, as `9-17`; `22-6` runs through midnight. Outside them the air is out and the dancer lies flat |
 | `face`       | `happy`   | `happy`, `surprised`, `cool`, `wink`, `joy`, `sleepy` or `angry` |
 | `pattern`    | `none`    | markings on the body: `none`, `rings` or `spiral` |

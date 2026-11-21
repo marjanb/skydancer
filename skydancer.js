@@ -34,6 +34,11 @@
     sign: '',         // words in a speech bubble by the dancer; empty for none
     bubble: 'drawn',  // drawn | box | burst
     hours: '',        // when it is worth dancing, as `9-17`; empty for always
+    // The two bits of wording a reader meets rather than sees. They are in
+    // English because something has to be; a page in another language can
+    // say them its own way.
+    linkLabel: '',    // what the link is called when the sign says nothing
+    pokeLabel: '',    // what the poke button is called
   };
 
   const OFF = ['false', '0', 'no', 'off'];
@@ -546,7 +551,7 @@
     let labelled = null;
 
     function labelLink(sign) {
-      const label = sign || 'Find out more';
+      const label = sign || cfg.linkLabel.trim() || 'Find out more';
       if (!aimed || label === labelled) return;
       labelled = label;
       leadsTo.textContent = label;
@@ -623,13 +628,17 @@
     // merely wiggled has nothing to report to a reader who cannot see it -- so
     // it stays out of the page's tab order rather than costing a stop per
     // embed for a flourish. A held pose swallows a poke, so it offers none.
-    let offering = null;
+    let offering = null, offeredAs = null;
     function offerPoke() {
       const worth = phrasesOf(cfg.shout).length > 0 && !held();
-      if (worth === offering) return;
+      const label = cfg.pokeLabel.trim() || 'Poke the dancer';
+      // the wording is watched as well as the offer, or renaming the button
+      // while it is already showing would not reach it
+      if (worth === offering && label === offeredAs) return;
       offering = worth;
+      offeredAs = label;
       pokeButton.hidden = !worth;
-      if (worth) pokeButton.textContent = 'Poke the dancer';
+      if (worth) pokeButton.textContent = label;
     }
 
     // A page can theme the dancer in CSS rather than in attributes, which is
