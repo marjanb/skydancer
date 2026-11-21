@@ -52,6 +52,20 @@
     return from < to ? h >= from && h < to : h >= from || h < to;
   }
 
+  // What a number may be, when being outside it is worse than useless. A
+  // dancer's settings can arrive from a page's own templating or from a
+  // shared link, so they are not always written by someone watching the
+  // result: a negative girth asked the canvas for a negative radius and threw
+  // on every frame, and a girth of 100000 left nothing on screen at all.
+  // Outside these a dancer is still a dancer, just a silly one.
+  const LIMITS = {
+    girth: [1, 400],
+    armLength: [0, 3],
+    speed: [0, 20],
+    wildness: [0, 10],
+    wind: [0, 10],
+  };
+
   const attrName = key => key.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`);
   const KEYS = Object.keys(DEFAULTS);
 
@@ -61,7 +75,9 @@
     if (typeof DEFAULTS[key] === 'number') {
       // Number, not parseFloat: height="500px" should fall back, not mean 500x the canvas
       const n = value.trim() === '' ? NaN : Number(value);
-      return Number.isFinite(n) ? n : DEFAULTS[key];
+      if (!Number.isFinite(n)) return DEFAULTS[key];
+      const bounds = LIMITS[key];
+      return bounds ? Math.min(bounds[1], Math.max(bounds[0], n)) : n;
     }
     return value;
   }

@@ -4,6 +4,14 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
+## Unreleased
+
+- **Fixed:** a negative `girth` asked the canvas for a negative radius and
+  threw on every frame, leaving nothing on screen; an enormous one left
+  nothing on screen either. Numbers that have a sensible range are held to
+  it now, since a dancer's settings can arrive from a page's templating or
+  a shared link rather than from someone watching the result.
+
 ## v2.12.0 — 2026-11-20
 
 - Pushing a version tag publishes to npm, with provenance, instead of it
