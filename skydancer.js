@@ -484,6 +484,26 @@
       return kink.dir * kink.mag * cfg.wildness * Math.sin(Math.PI * p) * Math.exp(-(((u - centre) / 0.08) ** 2));
     }
 
+    // Once in a long while it stops flailing and takes a bow: the tube folds
+    // from the bottom, holds for a beat, and springs back past upright before
+    // settling. Minutes apart, so it reads as a surprise rather than a tic.
+    // On the dance clock like everything else, so `speed` carries it, a held
+    // pose never reaches one, and in a crowd they go one after another --
+    // each dancer is a few seconds further along the same clock.
+    let bow = { start: 30 + Math.random() * 40, dur: 2.4, dir: 1 };
+
+    function bowBend(u, t) {
+      const p = (t - bow.start) / bow.dur;
+      if (p < 0 || p > 1) return 0;
+      // down, held, then up: the hold is what makes it read as deliberate
+      // rather than as one more thing the wind did.
+      const fold = p < 0.26 ? p / 0.26 : p < 0.52 ? 1 : 1 - (p - 0.52) / 0.48;
+      // a little past upright on the way back, the way a thing on a spring is
+      const spring = p > 0.78 ? -0.3 * Math.sin((p - 0.78) / 0.22 * Math.PI) : 0;
+      // weighted low, so it tips over from the base instead of curling its head
+      return bow.dir * (fold + spring) * 0.115 * (1 - u * 0.45);
+    }
+
     // Wind is one signed number: negative blows left, positive blows right.
     // It is the pointer (-1 far left .. 1 far right, 0 when it leaves), the
     // page going by underneath, and random gusts, scaled by the wind setting
@@ -822,6 +842,13 @@
     }
 
     function simulate(t) {
+      if (t > bow.start + bow.dur) {
+        bow = {
+          start: t + 30 + Math.random() * 40,
+          dur: 2.2 + Math.random() * 0.6,
+          dir: Math.random() < 0.5 ? -1 : 1,
+        };
+      }
       if (t > kink.start + kink.dur) {
         kink = {
           start: t + 1 + Math.random() * 3,
@@ -889,7 +916,8 @@
 
       // start half a girth up so the round end cap stays hidden behind the fan
       const body = chain(x, H - ground() - girth / 2, 0, BODY_SEGS, height / BODY_SEGS, u =>
-        w * (0.05 * Math.sin(t * 2.1 - u * 5) + 0.035 * Math.sin(t * 3.7 - u * 9 + 1.3)) * (0.3 + u) + kinkBend(u, t) * limp * look.flail + wind * 0.03 + droop);
+        w * (0.05 * Math.sin(t * 2.1 - u * 5) + 0.035 * Math.sin(t * 3.7 - u * 9 + 1.3)) * (0.3 + u) + kinkBend(u, t) * limp * look.flail
+        + bowBend(u, t) * look.flail + wind * 0.03 + droop);
 
       const shoulder = body[Math.round(BODY_SEGS * 0.66)];
       const arms = [-1, 1].map(side =>
