@@ -4,6 +4,14 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
+## Unreleased
+
+- A dancer tells the page two things: `poke` when a reader pokes it, carrying
+  the word it blurted, and `arrive` once it has come into view and finished
+  filling with air. Both bubble and cross a shadow boundary, so one listener
+  on the section it sits in catches it. A page's own `cheer()` fires no
+  `poke`: it already knows it asked.
+
 ## v2.13.0 — 2026-11-23
 
 - `link-label` and `poke-label` say the two bits of wording a reader meets

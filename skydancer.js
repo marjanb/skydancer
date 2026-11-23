@@ -515,6 +515,14 @@
     const leadsTo = root.querySelector('.go');
     const pokeButton = root.querySelector('.poke');
 
+    // What the page can hear. A dancer is mostly decoration, but a poke is a
+    // reader doing something and an arrival is a moment the page cannot see
+    // for itself. Both bubble and cross a shadow boundary, so one listener on
+    // the section a dancer sits in catches it however deeply it is nested.
+    function tell(name, detail = null) {
+      root.host.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
+    }
+
     // Somewhere a link may actually go. `javascript:` is the one that matters:
     // the destination can reach this widget from a page's own templating or
     // from the customizer's shareable link, so it is not always written by
@@ -588,40 +596,45 @@
     let lastTurn = 0;
     let lastShout = -1;   // which word the last poke took
 
-    function burst() {
+    function burst(byReader) {
       // without a running loop nothing would decay the punch, so it would be
       // saved up and spent the moment the dancer came back into view
       if (held() || !visible) return;
       // A poke takes one of them, never the one it took last: a flurry of
       // pokes should be a flurry of different words.
       const choices = phrasesOf(cfg.shout);
+      let said = '';   // what it blurted, which the page is told along with the poke
       if (choices.length && lastChest) {
         if (choices.length > 1) {
           let pick = lastShout;
           while (pick === lastShout) pick = Math.floor(Math.random() * choices.length);
           lastShout = pick;
         } else lastShout = 0;
-        const words = choices[lastShout];
+        said = choices[lastShout];
         // at least a third of the way round from the last one, so two in a
         // row never land on top of each other
         lastTurn += Math.PI * (0.7 + Math.random() * 0.6);
         const reach = cfg.girth * (1.5 + Math.random());
         shouts.push({
-          words,
+          words: said,
           x: lastChest.x + Math.cos(lastTurn) * reach,
           y: lastChest.y + Math.sin(lastTurn) * reach * 0.7,
           at: wall,
           tilt: (Math.random() - 0.5) * 0.45,
         });
         if (shouts.length > SHOUTS) shouts.shift();
-        blurted.textContent = words;
+        blurted.textContent = said;
       }
       punch = 1;
       kink = { start: t, dur: 0.9, dir: Math.random() < 0.5 ? -1 : 1, mag: 0.45 };
+      if (byReader) tell('poke', { shout: said });
     }
 
-    canvas.addEventListener('pointerdown', burst, { signal: events.signal });
-    pokeButton.addEventListener('click', burst, { signal: events.signal });
+    // A reader's poke is worth telling the page about. The page's own cheer()
+    // is not: it already knows that it asked.
+    const poked = () => burst(true);
+    canvas.addEventListener('pointerdown', poked, { signal: events.signal });
+    pokeButton.addEventListener('click', poked, { signal: events.signal });
 
     // Only offered when a poke has something to say, and when a poke would do
     // anything at all. A dancer is decoration, and a decorative one that is
@@ -735,6 +748,17 @@
       air = { from, to, start: wall, dur };
     }
 
+    // An arrival takes the best part of a second to fill, and a page watching
+    // for the dancer to be up cannot see the air going in. The telling waits
+    // for the stack to empty, since a breath lands in the middle of drawing a
+    // frame and a listener that poked the dancer back would reach it there.
+    let arriving = false;
+    function landed() {
+      if (!arriving) return;
+      arriving = false;
+      queueMicrotask(() => tell('arrive'));
+    }
+
     // how far the air has got, 0 flat to 1 full
     function pressure() {
       if (!air) return resting;   // not 1: a dancer let down stays down
@@ -742,6 +766,7 @@
       if (p >= 1) {
         resting = air.to;
         air = null;
+        landed();
         return resting;
       }
       // eased, so it leaves and arrives without a jolt
@@ -771,6 +796,7 @@
       if (!air) return;
       resting = filled = air.to;
       air = null;
+      landed();
     }
 
     // bend that swings a loose chain (arm, hair) round to point downwind
@@ -1524,8 +1550,14 @@
       // A held pose has no clock to fill by, so it just stands there. One
       // already part way in or out carries on from where it stopped: starting
       // over would snap it flat.
-      if (coming && !held() && !air) breathe(0, resting, FILL);
+      if (coming && !held() && !air) {
+        arriving = true;
+        breathe(0, resting, FILL);
+      }
       start();
+      // Nothing to fill means it is already up, so the arrival is now. A fill
+      // that is still going says so itself when it lands.
+      if (coming && !arriving) tell('arrive');
     });
     visibility.observe(canvas);
     reduced.addEventListener('change', start, { signal: events.signal });

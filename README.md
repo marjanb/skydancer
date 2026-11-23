@@ -129,6 +129,28 @@ document.querySelector('sky-dancer').hide();
 
 A hidden dancer stops animating and costs nothing until it is shown again.
 
+### Events
+
+A dancer says two things, both bubbling and both crossing a shadow boundary,
+so one listener on the section it sits in is enough:
+
+```js
+document.addEventListener('poke', e => {
+  console.log('poked, and it said', e.detail.shout);   // '' when it has no shout
+});
+document.addEventListener('arrive', () => { /* it is up */ });
+```
+
+`poke` is a reader poking it, by pointer or by the poke button. Your own
+`cheer()` does not fire one — the page already knows it asked — and neither
+does a poke that lands on a dancer holding a still pose, since nothing
+happened.
+
+`arrive` fires once, when a dancer has come into view and finished filling
+with air. That takes the best part of a second, which is why it is worth
+saying: on a held pose, or on one deliberately deflated, there is nothing to
+fill and it fires straight away.
+
 Poking a dancer knocks the air out of it. Where the viewer's system asks for reduced motion, it holds a still pose instead of animating.
 
 ## Customizer

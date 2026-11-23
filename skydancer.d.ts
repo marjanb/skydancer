@@ -14,6 +14,20 @@ export type SkyDancerPattern = 'none' | 'rings' | 'spiral';
 /** The shape of the speech balloon. */
 export type SkyDancerBubble = 'drawn' | 'box' | 'burst';
 
+/** What a dancer blurted, along with the poke that got it out of it. */
+export interface SkyDancerPokeDetail {
+  /** The phrase it shouted, or `''` when it has no `shout` to give. */
+  shout: string;
+}
+
+/** The events a dancer fires. Both bubble and cross a shadow boundary. */
+export interface SkyDancerEventMap {
+  /** A reader poked it. `cheer()` does not fire this. */
+  poke: CustomEvent<SkyDancerPokeDetail>;
+  /** It has come into view and finished filling with air. */
+  arrive: CustomEvent<null>;
+}
+
 /**
  * The element itself. Every setting is an attribute, so the methods below are
  * the whole of the interface.
@@ -96,6 +110,12 @@ declare global {
   interface HTMLElementTagNameMap {
     'sky-dancer': SkyDancerElement;
   }
+
+  // Both events bubble, so they really can arrive at any element or at the
+  // document, and listening on a container is the usual way round. Declaring
+  // them on the dancer alone would leave the common case untyped, which is
+  // why this goes on the map every target shares.
+  interface GlobalEventHandlersEventMap extends SkyDancerEventMap {}
 }
 
 // No JSX declaration here on purpose: typing an intrinsic element means
