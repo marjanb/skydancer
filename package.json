@@ -1,6 +1,6 @@
 {
   "name": "skydancer",
-  "version": "2.14.0",
+  "version": "2.15.0",
   "description": "An embeddable inflatable tube dancer, as a custom element. Vanilla canvas, no dependencies.",
   "keywords": [
     "custom-element",
