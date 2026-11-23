@@ -476,7 +476,7 @@ const PRESETS = {
   night: {
     color: '#2d2a55', accent: '#ff2d78', girth: 74, 'arm-length': 0.34,
     speed: 0.75, wildness: 0.7, wind: 0.35, face: 'cool', hair: false,
-    pattern: 'rings', placard: 'Open late', sign: 'Still open',
+    pattern: 'rings', placard: 'Open late', sign: 'Still open', glow: 'on',
   },
 };
 

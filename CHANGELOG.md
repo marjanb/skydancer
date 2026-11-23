@@ -4,6 +4,14 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
+## Unreleased
+
+- `glow` lights a dancer from inside, the way the ones outside a car yard
+  are after dark. `glow="dark"` leaves the choice to the reader's own
+  colour scheme, which is the signal the colours already follow. The light
+  is stepped rather than blurred, like the rest of the shading here, so six
+  lit dancers cost no more a frame than six unlit ones.
+
 ## v2.14.0 — 2026-11-23
 
 - A dancer tells the page two things: `poke` when a reader pokes it, carrying

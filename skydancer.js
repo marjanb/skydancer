@@ -27,6 +27,7 @@
     variety: false,   // give a crowd a colour and a face each, instead of one look
     paused: false,    // hold the pose; the dancer stays on show, it just stops
     pattern: 'none',  // markings on the body: none | rings | spiral
+    glow: 'none',     // lit from inside: none | on | dark (dark = when the reader's is)
     print: '',        // words printed down the body, the way a real one carries them
     placard: '',      // words on a board staked at the dancer's feet, which hold still
     shout: '',        // what it blurts when poked, floating beside the dancer
@@ -669,6 +670,11 @@
     // louder ask. Read on the events that can change it, never per frame --
     // getComputedStyle in the loop would force a style recalc every tick.
     const scheme = matchMedia('(prefers-color-scheme: dark)');
+    // Lit from inside, the way the ones outside a car yard are after dark.
+    // `dark` hands the choice to the reader's own preference, which is the
+    // same signal the colours already follow, and the same listener below
+    // repaints a held pose when it changes.
+    const lit = () => cfg.glow === 'on' || (cfg.glow === 'dark' && scheme.matches);
     let themed = { color: null, accent: null };
 
     function readTheme() {
@@ -1110,6 +1116,30 @@
       }
     }
 
+    // The light a lit one throws, as a few flat steps out from its own
+    // silhouette rather than a smooth blur: that is how everything else here
+    // is shaded, and it costs a handful of plain strokes a frame instead of
+    // the canvas's own blur, which is the one expensive thing in 2D. Each
+    // step is the tube's own width plus a share of the girth, so the light
+    // reaches as far from a thin arm as from a fat body.
+    const HALO = [[1.0, 0.07], [0.62, 0.09], [0.3, 0.12]];   // spread, alpha
+
+    function glowAround(body, arms, hair, girth, look) {
+      ctx.save();
+      ctx.lineCap = 'round';
+      for (const [spread, alpha] of HALO) {
+        // A thin dancer still has to light the air around it: below about a
+        // twentieth of the height the light stops reading at all, so the
+        // reach stops following the girth down.
+        const spill = Math.max(girth, H * 0.05) * spread;
+        ctx.globalAlpha = alpha;
+        strokeChain(body, girth + spill, look.color);
+        for (const arm of arms) strokeChain(arm, girth * 0.38 + spill, look.accent);
+        for (const strand of hair) strokeChain(strand, girth * 0.1 + spill, look.accent);
+      }
+      ctx.restore();
+    }
+
     // An eye sits this far either side of the middle, on this line.
     const EYE_X = 0.2, EYE_Y = -0.1;
 
@@ -1463,7 +1493,10 @@
       depthShade.addColorStop(0, `rgba(0,0,0,${GROUNDED})`);
       depthShade.addColorStop(1, 'rgba(0,0,0,0)');
 
+      const glowing = lit();
       for (const { body, arms, hair, girth, x, t, look } of dancers) {
+        // under the dancer, never over it, so the drawing on top stays crisp
+        if (glowing) glowAround(body, arms, hair, girth, look);
         for (const strand of hair) strokeChain(strand, girth * 0.1 + 4, OUTLINE);
         for (const strand of hair) strokeChain(strand, girth * 0.1, look.accent);
         for (const arm of arms) drawTube(arm, girth * 0.38, look.accent);

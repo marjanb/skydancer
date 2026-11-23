@@ -61,6 +61,7 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `hours`      | none      | when it is worth dancing, as `9-17`; `22-6` runs through midnight. Outside them the air is out and the dancer lies flat |
 | `face`       | `happy`   | `happy`, `surprised`, `cool`, `wink`, `joy`, `sleepy` or `angry` |
 | `pattern`    | `none`    | markings on the body: `none`, `rings` or `spiral` |
+| `glow`       | `none`    | light it from inside: `none`, `on`, or `dark` to follow the reader's colour scheme |
 | `hair`       | `true`    | `false` hides the hair                     |
 | `count`      | `1`       | how many dancers stand together (max 6)    |
 | `variety`    | `false`   | `true` gives each dancer in a crowd its own colour, face, girth, arms and hair |
