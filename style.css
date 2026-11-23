@@ -428,6 +428,21 @@ textarea {
 /* a button carrying only an icon wants to stay square, not stretch to the
    width of the words it hasn't got */
 .ghost.icon { padding: 7px 8px; }
+/* The one link on the page that wears a button's pill. It takes its colours
+   and its padding from .ghost above; what it needs on top is everything the
+   `button` rule gives a button and the UA does not give an anchor. */
+a.ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r);
+  cursor: pointer;
+  text-decoration: none;
+  transition: filter 0.15s, transform 0.08s, box-shadow 0.08s;
+}
+a.ghost:active { transform: translateY(3px); }
+a.ghost svg { width: 15px; height: 15px; flex: none; }
+
 .ghost:disabled {
   opacity: 0.4;
   cursor: not-allowed;

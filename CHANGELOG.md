@@ -15,6 +15,7 @@ look when a dancer starts looking different.
   reset, or a phone short of memory with the tab in the background -- stayed
   blank or came back at the wrong size. It asks for the context back now and
   repaints when it has it.
+- Customizer: a link to the repository, in the title row.
 - Customizer: the script box offers the npm form as well as the CDN one. The
   package has been installable since v2.11 and the page still only knew about
   the script tag.
