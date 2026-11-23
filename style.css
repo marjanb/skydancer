@@ -527,6 +527,12 @@ button svg { width: 15px; height: 15px; flex: none; }
   border-radius: 999px;
   box-shadow: 0 2px 0 var(--border-strong);
 }
+/* CDN or npm, and the Copy that goes with whichever is chosen: they belong
+   together at the end of the line rather than spread along it. */
+.head-chips { display: flex; align-items: center; gap: 6px; }
+.head-chips [role="group"] { display: flex; gap: 6px; }
+.head-chips .chip[aria-pressed="true"] { color: var(--accent-text); background: var(--accent-soft); }
+
 .chip:hover { color: var(--text); filter: none; }
 .chip:active { transform: translateY(2px); box-shadow: 0 0 0 var(--border-strong); }
 

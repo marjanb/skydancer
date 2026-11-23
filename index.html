@@ -185,8 +185,14 @@
           <textarea id="share-link" rows="2" readonly spellcheck="false" aria-label="Link to this dancer"></textarea>
         </div>
         <div class="field">
-          <div class="head"><span>Script <span class="hint">once per page</span></span>
-            <button type="button" id="copy-script" class="chip">Copy</button>
+          <div class="head"><span>Script <span class="hint" id="script-hint">once per page</span></span>
+            <span class="head-chips">
+              <span role="group" aria-label="How to load it">
+                <button type="button" class="chip" data-source="cdn" aria-pressed="true">CDN</button>
+                <button type="button" class="chip" data-source="npm" aria-pressed="false">npm</button>
+              </span>
+              <button type="button" id="copy-script" class="chip">Copy</button>
+            </span>
           </div>
           <textarea id="embed-script" rows="3" readonly spellcheck="false" aria-label="Embed script"></textarea>
         </div>

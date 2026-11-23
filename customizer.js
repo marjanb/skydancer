@@ -260,6 +260,15 @@ function writeInput(el, value) {
 
 // @2 follows the newest v2.x.x tag; jsDelivr generates the .min.js on the fly
 const CDN_URL = 'https://cdn.jsdelivr.net/gh/marjanb/skydancer@2/skydancer.min.js';
+// The same widget arrives two ways, and the tag underneath is the same
+// either way. One box holds one thing to copy, so the install that goes with
+// the import is said in the hint rather than pasted in with it.
+const SOURCES = {
+  cdn: { line: `<script src="${CDN_URL}"></script>`, hint: 'once per page' },
+  npm: { line: "import 'skydancer';", hint: 'after npm i skydancer' },
+};
+let source = 'cdn';
+const scriptHint = document.getElementById('script-hint');
 const embedScript = document.getElementById('embed-script');
 const embedTag = document.getElementById('embed-tag');
 
@@ -304,7 +313,7 @@ function apply(el) {
                        && !input.value.trim()))
     .filter(input => !(input.dataset.key === 'variety' && !input.checked))
     .map(input => `${input.dataset.key}="${escapeAttr(readInput(input))}"`).join(' ');
-  embedScript.value = `<script src="${CDN_URL}"></script>`;
+  showSource();
   // don't rewrite the box someone is typing or pasting into
   if (document.activeElement !== embedTag) {
     embedTag.value = `<sky-dancer ${attrs} style="height: ${dancerHeight()}px"></sky-dancer>`;
@@ -322,6 +331,20 @@ function wireCopy(button, field, label) {
       button.textContent = 'Press Ctrl/Cmd+C';
     }
     setTimeout(() => { button.textContent = label; }, 1500);
+  });
+}
+
+function showSource() {
+  embedScript.value = SOURCES[source].line;
+  scriptHint.textContent = SOURCES[source].hint;
+}
+
+const pickers = [...document.querySelectorAll('[data-source]')];
+for (const button of pickers) {
+  button.addEventListener('click', () => {
+    source = button.dataset.source;
+    for (const other of pickers) other.setAttribute('aria-pressed', String(other === button));
+    showSource();
   });
 }
 

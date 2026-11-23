@@ -11,6 +11,9 @@ look when a dancer starts looking different.
   filling with air. Both bubble and cross a shadow boundary, so one listener
   on the section it sits in catches it. A page's own `cheer()` fires no
   `poke`: it already knows it asked.
+- Customizer: the script box offers the npm form as well as the CDN one. The
+  package has been installable since v2.11 and the page still only knew about
+  the script tag.
 
 ## v2.13.0 — 2026-11-23
 
