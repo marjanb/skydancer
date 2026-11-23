@@ -11,6 +11,9 @@ look when a dancer starts looking different.
   filling with air. Both bubble and cross a shadow boundary, so one listener
   on the section it sits in catches it. A page's own `cheer()` fires no
   `poke`: it already knows it asked.
+- The blower it stands on is a blower now, not a dark slab: a cage on the end
+  of the drum, turning with the dance, which is as close as this gets to
+  explaining why a tube man flails. `fan="false"` takes it away again.
 - Customizer: the script box offers the npm form as well as the CDN one. The
   package has been installable since v2.11 and the page still only knew about
   the script tag.

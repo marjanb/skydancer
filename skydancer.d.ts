@@ -70,6 +70,8 @@ export interface SkyDancerAttributes {
   face?: SkyDancerFace;
   /** `false` hides the hair. Default `true`. */
   hair?: string | boolean;
+  /** `false` takes away the blower it stands on. Default `true`. */
+  fan?: string | boolean;
   /** How many stand together, 1 to 6. Default `1`. */
   count?: string | number;
   /** Give a crowd a colour, face and build each. Default `false`. */
