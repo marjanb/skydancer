@@ -27,7 +27,7 @@
     variety: false,   // give a crowd a colour and a face each, instead of one look
     paused: false,    // hold the pose; the dancer stays on show, it just stops
     pattern: 'none',  // markings: none | rings | spiral | dots | chevrons
-    glow: 'none',     // lit from inside: none | on | dark (dark = wherever it is dark)
+    glow: 'none',     // lit from inside: none | on
     print: '',        // words printed down the body, the way a real one carries them
     placard: '',      // words on a board staked at the dancer's feet, which hold still
     shout: '',        // what it blurts when poked, floating beside the dancer
@@ -706,12 +706,7 @@
     // `dark` hands the choice to the reader's own preference, which is the
     // same signal the colours already follow, and the same listener below
     // repaints a held pose when it changes.
-    // Whether the page around it is dark. The media query is the reader's own
-    // setting; `color-scheme` is what a page that has its own light/dark
-    // switch declares, and readTheme already runs again whenever that could
-    // have changed, so this costs no extra look at the styles.
-    let onDark = false;
-    const lit = () => cfg.glow === 'on' || (cfg.glow === 'dark' && onDark);
+    const lit = () => cfg.glow === 'on';
     let themed = { color: null, accent: null };
 
     function readTheme() {
@@ -723,11 +718,6 @@
         return set ? readable(set) : null;
       };
       themed = { color: pick('color'), accent: pick('accent') };
-      // `light dark` means the page handles both, and which one is showing is
-      // then the reader's setting again -- so only a page that says dark and
-      // not light has settled it itself.
-      const says = style.colorScheme.split(/\s+/);
-      onDark = says.includes('dark') && !says.includes('light') ? true : scheme.matches;
     }
 
     // The sign works through its phrases in turn. Splitting is cached because
@@ -1700,10 +1690,33 @@
                             { signal: events.signal });
     // Most pages swap themes by putting a class or a data-theme on <html>
     // rather than by the colour-scheme query, so watch for that as well --
-    // otherwise the dancer keeps the colours it read at startup.
-    const themeWatch = new MutationObserver(() => { readTheme(); redrawStill(); });
-    themeWatch.observe(document.documentElement,
-                       { attributes: true, attributeFilter: ['class', 'style', 'data-theme'] });
+    // otherwise the dancer keeps the colours it read at startup. Some put it
+    // on a wrapper instead, or on the dancer's own parent, so every element
+    // from the host up is watched: a handful on any real page, and the chain
+    // is walked again whenever the widget is connected somewhere new.
+    const THEMED_BY = ['class', 'style', 'data-theme'];
+    // A re-read means getComputedStyle, which forces the styles to be worked
+    // out there and then. An ancestor whose inline style is written every
+    // frame -- a parallax wrapper, a scroll library -- would otherwise buy
+    // one of those per mutation, so they are collected into one a frame.
+    let rereading = false;
+    const themeWatch = new MutationObserver(() => {
+      if (rereading) return;
+      rereading = true;
+      requestAnimationFrame(() => {
+        rereading = false;
+        readTheme();
+        redrawStill();
+      });
+    });
+    for (let node = root.host; node; ) {
+      themeWatch.observe(node, { attributes: true, attributeFilter: THEMED_BY });
+      const up = node.parentElement;
+      if (up) { node = up; continue; }
+      // out through a shadow boundary, if the dancer is inside one
+      const above = node.getRootNode();
+      node = above instanceof ShadowRoot ? above.host : null;
+    }
     readTheme();
     ready = true;
 

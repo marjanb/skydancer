@@ -11,10 +11,8 @@ export type SkyDancerFace =
 /** Markings down the body. */
 export type SkyDancerPattern = 'none' | 'rings' | 'spiral' | 'dots' | 'chevrons';
 
-/** When a dancer is lit from inside. `dark` lights it only where it is
- * dark: the reader's own colour scheme, or a page that declares
- * `color-scheme: dark` on its root. */
-export type SkyDancerGlow = 'none' | 'on' | 'dark';
+/** Whether a dancer is lit from inside. */
+export type SkyDancerGlow = 'none' | 'on';
 
 /** The shape of the speech balloon. */
 export type SkyDancerBubble = 'drawn' | 'round' | 'box' | 'cloud' | 'burst';
@@ -84,8 +82,7 @@ export interface SkyDancerAttributes {
   /** Markings on the body. Default `none`. */
   pattern?: SkyDancerPattern;
   /** Light it from inside, the way the ones outside a car yard are after
-   * dark. `dark` leaves the choice to the reader's colour scheme. Default
-   * `none`. */
+   * dark. Default `none`. */
   glow?: SkyDancerGlow;
   /** Words printed down the body, bending with the tube. */
   print?: string;

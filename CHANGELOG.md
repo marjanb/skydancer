@@ -4,6 +4,19 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
+## Unreleased
+
+- **`glow="dark"` is gone**, a few hours after it arrived. `glow` is `none`
+  or `on`. A tag still saying `dark` is simply unlit, and the customizer
+  drops the value from a link that carries it.
+- A theme is noticed wherever the page puts it. Only `<html>` was watched
+  before, so a page that set `--sky-dancer-color` on a section, a card or
+  the dancer's own parent kept whatever colour it had at startup. Every
+  element from the dancer up is watched now, out through a shadow boundary
+  as well, and the re-reads are collected into one a frame -- an ancestor
+  whose inline style is rewritten every frame would otherwise buy a style
+  recalculation per mutation.
+
 ## v2.15.0 — 2026-11-23
 
 - Customizer: the dancer can be moved with the arrow keys as well as
