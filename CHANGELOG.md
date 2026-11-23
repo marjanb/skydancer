@@ -4,7 +4,7 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
-## Unreleased
+## v2.13.0 — 2026-11-23
 
 - `link-label` and `poke-label` say the two bits of wording a reader meets
   rather than sees. They were English only, which on a page in another
