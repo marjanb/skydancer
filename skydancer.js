@@ -27,7 +27,7 @@
     variety: false,   // give a crowd a colour and a face each, instead of one look
     paused: false,    // hold the pose; the dancer stays on show, it just stops
     pattern: 'none',  // markings: none | rings | spiral | dots | chevrons
-    glow: 'none',     // lit from inside: none | on | dark (dark = when the reader's is)
+    glow: 'none',     // lit from inside: none | on | dark (dark = wherever it is dark)
     print: '',        // words printed down the body, the way a real one carries them
     placard: '',      // words on a board staked at the dancer's feet, which hold still
     shout: '',        // what it blurts when poked, floating beside the dancer
@@ -496,6 +496,14 @@
     // each dancer is a few seconds further along the same clock.
     let bow = { start: 30 + Math.random() * 40, dur: 2.4, dir: 1 };
 
+    function scheduleBow(t) {
+      bow = {
+        start: t + 30 + Math.random() * 40,
+        dur: 2.2 + Math.random() * 0.6,
+        dir: Math.random() < 0.5 ? -1 : 1,
+      };
+    }
+
     function bowBend(u, t) {
       const p = (t - bow.start) / bow.dur;
       if (p < 0 || p > 1) return 0;
@@ -698,7 +706,12 @@
     // `dark` hands the choice to the reader's own preference, which is the
     // same signal the colours already follow, and the same listener below
     // repaints a held pose when it changes.
-    const lit = () => cfg.glow === 'on' || (cfg.glow === 'dark' && scheme.matches);
+    // Whether the page around it is dark. The media query is the reader's own
+    // setting; `color-scheme` is what a page that has its own light/dark
+    // switch declares, and readTheme already runs again whenever that could
+    // have changed, so this costs no extra look at the styles.
+    let onDark = false;
+    const lit = () => cfg.glow === 'on' || (cfg.glow === 'dark' && onDark);
     let themed = { color: null, accent: null };
 
     function readTheme() {
@@ -710,6 +723,11 @@
         return set ? readable(set) : null;
       };
       themed = { color: pick('color'), accent: pick('accent') };
+      // `light dark` means the page handles both, and which one is showing is
+      // then the reader's setting again -- so only a page that says dark and
+      // not light has settled it itself.
+      const says = style.colorScheme.split(/\s+/);
+      onDark = says.includes('dark') && !says.includes('light') ? true : scheme.matches;
     }
 
     // The sign works through its phrases in turn. Splitting is cached because
@@ -846,13 +864,7 @@
     }
 
     function simulate(t) {
-      if (t > bow.start + bow.dur) {
-        bow = {
-          start: t + 30 + Math.random() * 40,
-          dur: 2.2 + Math.random() * 0.6,
-          dir: Math.random() < 0.5 ? -1 : 1,
-        };
-      }
+      if (t > bow.start + bow.dur) scheduleBow(t);
       if (t > kink.start + kink.dur) {
         kink = {
           start: t + 1 + Math.random() * 3,
@@ -1558,10 +1570,15 @@
       depthShade.addColorStop(0, `rgba(0,0,0,${GROUNDED})`);
       depthShade.addColorStop(1, 'rgba(0,0,0,0)');
 
-      const glowing = lit();
+      // Every halo before any dancer, not one each as they are drawn: the
+      // light is behind all of them, and a fat one in front would otherwise
+      // wash out the body of the one standing behind it.
+      if (lit()) {
+        for (const { body, arms, hair, girth, look } of dancers) {
+          glowAround(body, arms, hair, girth, look);
+        }
+      }
       for (const { body, arms, hair, girth, x, t, look } of dancers) {
-        // under the dancer, never over it, so the drawing on top stays crisp
-        if (glowing) glowAround(body, arms, hair, girth, look);
         for (const strand of hair) strokeChain(strand, girth * 0.1 + 4, OUTLINE);
         for (const strand of hair) strokeChain(strand, girth * 0.1, look.accent);
         for (const arm of arms) drawTube(arm, girth * 0.38, look.accent);
@@ -1646,6 +1663,10 @@
         blurted.textContent = '';   // which is what would have cleared this
         settleAir();    // no frames to breathe with, so finish it now
         updateLift(t);  // or the pose could be stuck mid-sag
+        // A pose held mid-bow would stay folded in half for as long as the
+        // page kept it held, which reads as broken rather than as paused.
+        // The bow is put off instead; it comes round again once it is let go.
+        if (t >= bow.start && t <= bow.start + bow.dur) scheduleBow(t);
         return render();
       }
       last = performance.now();

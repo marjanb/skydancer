@@ -11,8 +11,9 @@ export type SkyDancerFace =
 /** Markings down the body. */
 export type SkyDancerPattern = 'none' | 'rings' | 'spiral' | 'dots' | 'chevrons';
 
-/** When a dancer is lit from inside. `dark` follows the reader's own
- * colour scheme. */
+/** When a dancer is lit from inside. `dark` lights it only where it is
+ * dark: the reader's own colour scheme, or a page that declares
+ * `color-scheme: dark` on its root. */
 export type SkyDancerGlow = 'none' | 'on' | 'dark';
 
 /** The shape of the speech balloon. */

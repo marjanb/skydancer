@@ -20,10 +20,11 @@ look when a dancer starts looking different.
   pose never reaches one. In a crowd they go one after another, each dancer
   being a few seconds further along the same clock.
 - `glow` lights a dancer from inside, the way the ones outside a car yard
-  are after dark. `glow="dark"` leaves the choice to the reader's own
-  colour scheme, which is the signal the colours already follow. The light
-  is stepped rather than blurred, like the rest of the shading here, so six
-  lit dancers cost no more a frame than six unlit ones.
+  are after dark. `glow="dark"` lights it only where it is dark: the
+  reader's own colour scheme, or a page that says `color-scheme: dark` for
+  itself. The light is stepped rather than blurred, like the rest of the
+  shading here, so six lit dancers cost no more a frame than six unlit
+  ones.
 
 ## v2.14.0 — 2026-11-23
 
