@@ -23,7 +23,6 @@
     wind: 1,          // 0 = calm; scales pointer wind and gusts
     face: 'happy',    // happy | surprised | cool | wink | joy | sleepy | angry
     hair: true,
-    fan: true,        // the blower it stands on; false takes it away
     count: 1,         // how many dancers stand together
     variety: false,   // give a crowd a colour and a face each, instead of one look
     paused: false,    // hold the pose; the dancer stays on show, it just stops
@@ -1309,55 +1308,15 @@
       ctx.restore();
     }
 
-    // The blower it stands on, and the only thing here really planted in the
-    // ground. It was a dark slab, which said nothing about where the air comes
-    // from; a cage on the end of the drum, turning, says it. On the dance
-    // clock, so `speed` carries it and a held pose stops it dead -- a fan
-    // spinning over a dancer frozen mid-flail would read as a bug.
-    function drawFan(x, g, t) {
-      if (!cfg.fan) return;
+    function drawFan(x, g) {
       const w = g * 1.7, h = g * 0.55;
-      const top = H - ground() - h * 0.6;
       ctx.fillStyle = '#3a3f4b';
       ctx.strokeStyle = OUTLINE;
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.roundRect(x - w / 2, top, w, h, 8);
+      ctx.roundRect(x - w / 2, H - ground() - h * 0.6, w, h, 8);
       ctx.fill();
       ctx.stroke();
-
-      // The cage sits proud of the drum's end, as deep as the drum is tall:
-      // any smaller and the blades are a smudge at the sizes these embed at.
-      const r = h * 0.68;
-      const at = { x: x - w / 2 + r * 0.8, y: top + h * 0.3 };
-      ctx.beginPath();
-      ctx.arc(at.x, at.y, r, 0, Math.PI * 2);
-      ctx.fillStyle = '#20242d';
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.save();
-      ctx.translate(at.x, at.y);
-      ctx.rotate(t * 7);   // about a turn a second, and three blades: it
-                           // aliases somewhere past speed="9", the way any
-                           // wheel does on film, which is a fair price for a
-                           // dancer already flailing ten times too fast
-      ctx.fillStyle = '#767e8e';
-      for (let i = 0; i < 3; i++) {
-        ctx.rotate(Math.PI * 2 / 3);
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        // swept back, so which way it is turning reads even in a still pose
-        ctx.quadraticCurveTo(r * 0.8, -r * 0.34, r * 0.84, r * 0.2);
-        ctx.quadraticCurveTo(r * 0.42, r * 0.24, 0, 0);
-        ctx.fill();
-      }
-      ctx.restore();
-
-      ctx.beginPath();
-      ctx.arc(at.x, at.y, r * 0.2, 0, Math.PI * 2);
-      ctx.fillStyle = '#aab2c0';
-      ctx.fill();
     }
 
     // A comic speech balloon that floats beside the head. It eases toward the
@@ -1513,7 +1472,7 @@
         // the last drawn is the front-most, since they are sorted by girth
         lastChest = body[Math.round(BODY_SEGS * 0.55)];   // for blurted words
         drawFace(body[Math.round(BODY_SEGS * 0.87)], girth, t, look.face);
-        drawFan(x, girth, t);
+        drawFan(x, girth);
       }
 
       // The fattest of them sets the scale for everything drawn over the

@@ -15,9 +15,6 @@ look when a dancer starts looking different.
   reset, or a phone short of memory with the tab in the background -- stayed
   blank or came back at the wrong size. It asks for the context back now and
   repaints when it has it.
-- The blower it stands on is a blower now, not a dark slab: a cage on the end
-  of the drum, turning with the dance, which is as close as this gets to
-  explaining why a tube man flails. `fan="false"` takes it away again.
 - Customizer: the script box offers the npm form as well as the CDN one. The
   package has been installable since v2.11 and the page still only knew about
   the script tag.
