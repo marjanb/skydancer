@@ -4,7 +4,7 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
-## Unreleased
+## v2.14.0 — 2026-11-23
 
 - A dancer tells the page two things: `poke` when a reader pokes it, carrying
   the word it blurted, and `arrive` once it has come into view and finished
