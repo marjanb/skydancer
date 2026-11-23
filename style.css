@@ -428,9 +428,10 @@ textarea {
 /* a button carrying only an icon wants to stay square, not stretch to the
    width of the words it hasn't got */
 .ghost.icon { padding: 7px 8px; }
-/* The one link on the page that wears a button's pill. It takes its colours
-   and its padding from .ghost above; what it needs on top is everything the
-   `button` rule gives a button and the UA does not give an anchor. */
+/* The one link on the page that wears a button's pill. Its colours and its
+   padding come from .ghost above; this is the rest of the shape, which an
+   anchor does not get for free the way a button does. Nothing here about
+   text: the link carries an icon and no words. */
 a.ghost {
   display: inline-flex;
   align-items: center;
