@@ -47,6 +47,26 @@ dancer.addEventListener('pointerdown', e => {
   addEventListener('pointercancel', drop);
 });
 
+// Dragging is a pointer gesture, and where the dancer ends up is part of
+// what the share link carries -- so it cannot be the only way to move it.
+// The arrows do the same job a nudge at a time, shift for the fine one.
+const NUDGE = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+dancer.tabIndex = 0;
+// A group rather than an image: the widget keeps its own live region and its
+// poke button inside, and role="img" would hide both from a reader.
+dancer.setAttribute('role', 'group');
+dancer.setAttribute('aria-label', 'The dancer. Move it with the arrow keys.');
+dancer.addEventListener('keydown', e => {
+  const way = NUDGE[e.key];
+  if (!way || e.metaKey || e.ctrlKey || e.altKey) return;
+  e.preventDefault();   // or the page scrolls out from under it
+  const by = e.shiftKey ? 1 : 12;
+  spot.x += way[0] * by;
+  spot.y += way[1] * by;
+  placeDancer();
+  save();   // a run of presses files as one step, the way a drag does
+});
+
 addEventListener('resize', placeDancer);
 
 dancerSize.addEventListener('input', () => {
@@ -278,6 +298,7 @@ const DEFAULTS = document.createElement('sky-dancer').cfg;
 
 const escapeHtml = s => s.replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
 const escapeAttr = s => escapeHtml(String(s)).replace(/"/g, '&quot;');
+const said = document.getElementById('said');
 const copyScript = document.getElementById('copy-script');
 const copyTag = document.getElementById('copy-tag');
 
@@ -325,12 +346,16 @@ function wireCopy(button, field, label) {
     try {
       await navigator.clipboard.writeText(field.value);
       button.textContent = 'Copied!';
+      // A button renaming itself is not reliably read out, and this one has
+      // the focus when it happens, so the news is said separately.
+      said.textContent = `${button.closest('.field').querySelector('.head span').firstChild.textContent.trim()} copied`;
     } catch {
       // clipboard can be blocked (e.g. some file:// setups); leave it selected for Ctrl/Cmd+C
       field.select();
       button.textContent = 'Press Ctrl/Cmd+C';
+      said.textContent = 'Could not copy; press Ctrl or Cmd + C';
     }
-    setTimeout(() => { button.textContent = label; }, 1500);
+    setTimeout(() => { button.textContent = label; said.textContent = ''; }, 1500);
   });
 }
 

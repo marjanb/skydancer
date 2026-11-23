@@ -425,6 +425,17 @@ textarea {
 }
 .hex:focus { color: var(--text); border-color: var(--accent); }
 
+/* there, but only to be read aloud */
+.offscreen {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* a button carrying only an icon wants to stay square, not stretch to the
    width of the words it hasn't got */
 .ghost.icon { padding: 7px 8px; }
@@ -547,7 +558,9 @@ button svg { width: 15px; height: 15px; flex: none; }
    together at the end of the line rather than spread along it. */
 .head-chips { display: flex; align-items: center; gap: 6px; }
 .head-chips [role="group"] { display: flex; gap: 6px; }
-.head-chips .chip[aria-pressed="true"] { color: var(--accent-text); background: var(--accent-soft); }
+/* --accent-text is for a chip filled with the accent outright; this one is
+   filled with the pale tint, which needs the darker ink the headings use. */
+.head-chips .chip[aria-pressed="true"] { color: var(--tint-text); background: var(--accent-soft); }
 
 .chip:hover { color: var(--text); filter: none; }
 .chip:active { transform: translateY(2px); box-shadow: 0 0 0 var(--border-strong); }

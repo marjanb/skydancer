@@ -6,6 +6,12 @@ look when a dancer starts looking different.
 
 ## Unreleased
 
+- Customizer: the dancer can be moved with the arrow keys as well as
+  dragged, which is the only way to reach it without a pointer -- and where
+  it stands is part of what a share link carries. A copy is said out loud
+  for a reader who cannot see the button change, the pressed CDN/npm chip
+  had white words on a pale tint (1.3:1, now 5.4:1), and the page has a
+  description and an icon of its own instead of a 404 in every console.
 - `glow` lights a dancer from inside, the way the ones outside a car yard
   are after dark. `glow="dark"` leaves the choice to the reader's own
   colour scheme, which is the signal the colours already follow. The light
