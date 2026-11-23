@@ -12,8 +12,10 @@ look when a dancer starts looking different.
 - A theme is noticed wherever the page puts it. Only `<html>` was watched
   before, so a page that set `--sky-dancer-color` on a section, a card or
   the dancer's own parent kept whatever colour it had at startup. Every
-  element from the dancer up is watched now, out through a shadow boundary
-  as well, and the re-reads are collected into one a frame -- an ancestor
+  element from the dancer up is watched now, following the page as it is
+  laid out rather than as it is written -- out through a shadow boundary,
+  and out through a slot to whatever surrounds it -- and the re-reads are
+  collected into one a frame, since an ancestor
   whose inline style is rewritten every frame would otherwise buy a style
   recalculation per mutation.
 

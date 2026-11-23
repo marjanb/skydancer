@@ -702,10 +702,7 @@
     // louder ask. Read on the events that can change it, never per frame --
     // getComputedStyle in the loop would force a style recalc every tick.
     const scheme = matchMedia('(prefers-color-scheme: dark)');
-    // Lit from inside, the way the ones outside a car yard are after dark.
-    // `dark` hands the choice to the reader's own preference, which is the
-    // same signal the colours already follow, and the same listener below
-    // repaints a held pose when it changes.
+    // lit from inside, the way the ones outside a car yard are after dark
     const lit = () => cfg.glow === 'on';
     let themed = { color: null, accent: null };
 
@@ -1699,21 +1696,24 @@
     // out there and then. An ancestor whose inline style is written every
     // frame -- a parallax wrapper, a scroll library -- would otherwise buy
     // one of those per mutation, so they are collected into one a frame.
-    let rereading = false;
+    let rereading = 0;
     const themeWatch = new MutationObserver(() => {
       if (rereading) return;
-      rereading = true;
-      requestAnimationFrame(() => {
-        rereading = false;
+      rereading = requestAnimationFrame(() => {
+        rereading = 0;
         readTheme();
         redrawStill();
       });
     });
     for (let node = root.host; node; ) {
       themeWatch.observe(node, { attributes: true, attributeFilter: THEMED_BY });
-      const up = node.parentElement;
+      // The flat tree, not the one in the markup: a custom property comes
+      // down the way the page is actually laid out, so a dancer handed to
+      // another component through a slot inherits from around the slot, not
+      // from around the tag.
+      const up = node.assignedSlot ?? node.parentElement;
       if (up) { node = up; continue; }
-      // out through a shadow boundary, if the dancer is inside one
+      // and out through a shadow boundary, if the dancer is inside one
       const above = node.getRootNode();
       node = above instanceof ShadowRoot ? above.host : null;
     }
@@ -1756,6 +1756,7 @@
       stop() {
         visible = false;  // a late redraw() must not paint a detached canvas
         cancelAnimationFrame(raf);
+        cancelAnimationFrame(rereading);   // a theme re-read waiting on a frame
         observer.disconnect();
         visibility.disconnect();
         themeWatch.disconnect();
