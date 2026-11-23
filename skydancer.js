@@ -430,6 +430,15 @@
     observer.observe(canvas);
     resize();
 
+    // A 2D context can be taken away -- a driver reset, or a phone short of
+    // memory while the tab is in the background. Nothing says so: the dancer
+    // simply stops being painted, and a held pose never paints again at all.
+    // Cancelling the loss is what asks for it back, and a context comes back
+    // with its size and its scale cleared, which is exactly what a resize
+    // puts right.
+    canvas.addEventListener('contextlost', e => e.preventDefault(), { signal: events.signal });
+    canvas.addEventListener('contextrestored', resize, { signal: events.signal });
+
     // ---- simulation ----
     // Everything is a chain of segments. Each segment adds a small bend to the
     // running angle (0 = straight up, positive = leaning right), so travelling

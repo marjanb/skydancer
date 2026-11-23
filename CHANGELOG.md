@@ -11,6 +11,10 @@ look when a dancer starts looking different.
   filling with air. Both bubble and cross a shadow boundary, so one listener
   on the section it sits in catches it. A page's own `cheer()` fires no
   `poke`: it already knows it asked.
+- **Fixed:** a dancer whose canvas lost its drawing context -- a driver
+  reset, or a phone short of memory with the tab in the background -- stayed
+  blank or came back at the wrong size. It asks for the context back now and
+  repaints when it has it.
 - The blower it stands on is a blower now, not a dark slab: a cage on the end
   of the drum, turning with the dance, which is as close as this gets to
   explaining why a tube man flails. `fan="false"` takes it away again.
