@@ -12,6 +12,8 @@ look when a dancer starts looking different.
   for a reader who cannot see the button change, the pressed CDN/npm chip
   had white words on a pale tint (1.3:1, now 5.4:1), and the page has a
   description and an icon of its own instead of a 404 in every console.
+- Two more markings, `dots` and `chevrons`, and two more balloons, a plain
+  `round` one and a scalloped `cloud`.
 - Every half-minute or so a dancer stops flailing and takes a bow: it folds
   right over from the base, holds for a beat, and springs back past upright.
   On the dance clock like everything else, so `speed` carries it and a held

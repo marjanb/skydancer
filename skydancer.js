@@ -26,14 +26,14 @@
     count: 1,         // how many dancers stand together
     variety: false,   // give a crowd a colour and a face each, instead of one look
     paused: false,    // hold the pose; the dancer stays on show, it just stops
-    pattern: 'none',  // markings on the body: none | rings | spiral
+    pattern: 'none',  // markings: none | rings | spiral | dots | chevrons
     glow: 'none',     // lit from inside: none | on | dark (dark = when the reader's is)
     print: '',        // words printed down the body, the way a real one carries them
     placard: '',      // words on a board staked at the dancer's feet, which hold still
     shout: '',        // what it blurts when poked, floating beside the dancer
     href: '',         // where a click on the dancer leads; empty for nowhere
     sign: '',         // words in a speech bubble by the dancer; empty for none
-    bubble: 'drawn',  // drawn | box | burst
+    bubble: 'drawn',  // drawn | round | box | cloud | burst
     hours: '',        // when it is worth dancing, as `9-17`; empty for always
     // The two bits of wording a reader meets rather than sees. They are in
     // English because something has to be; a page in another language can
@@ -110,11 +110,15 @@
   // tipX/tipY: where the tail ends, so the balloon can be hung off it
   const BALLOON = { cx: 81, cy: 37, rx: 58, ry: 31, tipX: 27.4, tipY: 77.9 };
 
-  // Three bubbles in one coordinate frame, so they hang the same way. `fit` is
-  // how much of the oval the words may use; a spiky one has less room.
+  // Every bubble in one coordinate frame, so they all hang the same way.
+  // `fit` is how much of the oval the words may use: a spiky or scalloped
+  // edge eats into it, so those get less. Apart from the hand-drawn one they
+  // are all a radius at an angle, which is the whole of the shape.
   const BUBBLES = {
     drawn: { fit: 1 },  // the hand-drawn one
+    round: { fit: 1, r: () => 1 },
     box: { fit: 0.96, r: a => (Math.abs(Math.cos(a)) ** 5 + Math.abs(Math.sin(a)) ** 5) ** -0.2 },
+    cloud: { fit: 0.87, r: a => 1 + 0.11 * Math.cos(a * 9) },
     burst: { fit: 0.74, spikes: 15 },
   };
 
@@ -1047,6 +1051,39 @@
     function drawPattern(pts, width, kind, ink) {
       const n = pts.length - 1;
       ctx.strokeStyle = ink;
+
+      if (kind === 'dots') {
+        // Spots down the tube, a little off centre and swapping sides, so the
+        // line of them reads as painted round the body rather than stamped
+        // down the front.
+        ctx.fillStyle = ink;
+        for (let i = 3; i < n; i += 3) {
+          const p = pts[i];
+          const off = (i % 6 ? 0.2 : -0.2) * width;
+          ctx.beginPath();
+          ctx.arc(p.x + Math.cos(p.a) * off, p.y + Math.sin(p.a) * off, width * 0.15, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        return;
+      }
+
+      if (kind === 'chevrons') {
+        // Vs pointing up the tube: out to one edge, up to the middle of the
+        // next pair of points, out to the other. The clip takes care of the
+        // ends overrunning the silhouette.
+        ctx.lineCap = 'round';
+        ctx.lineWidth = width * 0.16;
+        const edge = width * 0.46;
+        for (let i = 2; i < n - 2; i += 4) {
+          const lo = pts[i], hi = pts[i + 2];
+          ctx.beginPath();
+          ctx.moveTo(lo.x - Math.cos(lo.a) * edge, lo.y - Math.sin(lo.a) * edge);
+          ctx.lineTo(hi.x, hi.y);
+          ctx.lineTo(lo.x + Math.cos(lo.a) * edge, lo.y + Math.sin(lo.a) * edge);
+          ctx.stroke();
+        }
+        return;
+      }
 
       if (kind === 'rings') {
         // Butt caps: a round one would add half the tube's width at each end

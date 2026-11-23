@@ -60,7 +60,7 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `poke-label` | none      | what the poke button is called; English `Poke the dancer` otherwise |
 | `hours`      | none      | when it is worth dancing, as `9-17`; `22-6` runs through midnight. Outside them the air is out and the dancer lies flat |
 | `face`       | `happy`   | `happy`, `surprised`, `cool`, `wink`, `joy`, `sleepy` or `angry` |
-| `pattern`    | `none`    | markings on the body: `none`, `rings` or `spiral` |
+| `pattern`    | `none`    | markings on the body: `none`, `rings`, `spiral`, `dots` or `chevrons` |
 | `glow`       | `none`    | light it from inside: `none`, `on`, or `dark` to follow the reader's colour scheme |
 | `hair`       | `true`    | `false` hides the hair                     |
 | `count`      | `1`       | how many dancers stand together (max 6)    |
@@ -70,7 +70,7 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `print`      | none      | words printed down the body, bending with the tube |
 | `placard`    | none      | words on a board staked at the dancer's feet, which hold still |
 | `shout`      | none      | what it blurts when poked; the word pops up beside it and fades, leaving the sign alone. Divide several with `\|` (and `\|\|` for a literal one) and a poke takes one |
-| `bubble`     | `drawn`   | bubble shape: `drawn`, `box` or `burst`    |
+| `bubble`     | `drawn`   | bubble shape: `drawn`, `round`, `box`, `cloud` or `burst` |
 | `href`       | none      | where a click on the dancer leads, in a new tab; it also becomes a link that can be tabbed to |
 
 The `sign` attribute puts words in a hand-drawn speech balloon beside the dancer's head. It drifts rather than tracking the head, so the words stay readable.
