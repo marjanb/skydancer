@@ -146,10 +146,10 @@ document.addEventListener('arrive', () => { /* it is up */ });
 does a poke that lands on a dancer holding a still pose, since nothing
 happened.
 
-`arrive` fires once, when a dancer has come into view and finished filling
-with air. That takes the best part of a second, which is why it is worth
-saying: on a held pose, or on one deliberately deflated, there is nothing to
-fill and it fires straight away.
+`arrive` fires once each time a dancer comes into view, as soon as the air
+has settled. The fill takes the best part of a second, which is what makes it
+worth waiting for; on a held pose, or on one deliberately deflated, there is
+nothing to fill and it fires straight away.
 
 Poking a dancer knocks the air out of it. Where the viewer's system asks for reduced motion, it holds a still pose instead of animating.
 

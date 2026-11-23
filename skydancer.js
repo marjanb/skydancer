@@ -756,7 +756,9 @@
     function landed() {
       if (!arriving) return;
       arriving = false;
-      queueMicrotask(() => tell('arrive'));
+      // Not if the dancer has gone in the meantime: stop() drops the flag, so
+      // a widget torn down in the same tick says nothing on its way out.
+      queueMicrotask(() => { if (visible) tell('arrive'); });
     }
 
     // how far the air has got, 0 flat to 1 full
@@ -1550,14 +1552,19 @@
       // A held pose has no clock to fill by, so it just stands there. One
       // already part way in or out carries on from where it stopped: starting
       // over would snap it flat.
-      if (coming && !held() && !air) {
-        arriving = true;
-        breathe(0, resting, FILL);
+      if (coming && !held()) {
+        // Air already moving is this arrival, whichever way it is going.
+        // Otherwise it fills -- unless it is meant to be lying flat, which is
+        // nothing to wait for and was a breath that changed nothing.
+        if (!air && resting > 0) breathe(0, resting, FILL);
+        arriving = !!air;
       }
+      // Nothing moving means it has settled already, so the arrival is now. A
+      // breath still going says so itself when it lands. Asked before start(),
+      // which is where a held pose finishes one, or that would be told twice.
+      const settled = coming && !arriving;
       start();
-      // Nothing to fill means it is already up, so the arrival is now. A fill
-      // that is still going says so itself when it lands.
-      if (coming && !arriving) tell('arrive');
+      if (settled) tell('arrive');
     });
     visibility.observe(canvas);
     reduced.addEventListener('change', start, { signal: events.signal });
