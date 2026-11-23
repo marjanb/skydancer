@@ -4,7 +4,7 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
-## Unreleased
+## v2.15.0 — 2026-11-23
 
 - Customizer: the dancer can be moved with the arrow keys as well as
   dragged, which is the only way to reach it without a pointer -- and where
@@ -16,9 +16,10 @@ look when a dancer starts looking different.
   `round` one and a scalloped `cloud`.
 - Every half-minute or so a dancer stops flailing and takes a bow: it folds
   right over from the base, holds for a beat, and springs back past upright.
-  On the dance clock like everything else, so `speed` carries it and a held
-  pose never reaches one. In a crowd they go one after another, each dancer
-  being a few seconds further along the same clock.
+  On the dance clock like everything else, so `speed` carries it, and a pose
+  held in the middle of one stands back up rather than staying folded. In a
+  crowd they go one after another, each dancer being a few seconds further
+  along the same clock.
 - `glow` lights a dancer from inside, the way the ones outside a car yard
   are after dark. `glow="dark"` lights it only where it is dark: the
   reader's own colour scheme, or a page that says `color-scheme: dark` for
