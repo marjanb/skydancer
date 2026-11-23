@@ -23,7 +23,7 @@
     wind: 1,          // 0 = calm; scales pointer wind and gusts
     face: 'happy',    // happy | surprised | cool | wink | joy | sleepy | angry
     hair: true,
-    fan: true,        // the blower it stands on; false leaves it floating
+    fan: true,        // the blower it stands on; false takes it away
     count: 1,         // how many dancers stand together
     variety: false,   // give a crowd a colour and a face each, instead of one look
     paused: false,    // hold the pose; the dancer stays on show, it just stops
@@ -1338,7 +1338,10 @@
 
       ctx.save();
       ctx.translate(at.x, at.y);
-      ctx.rotate(t * 7);   // about a turn a second, well clear of a strobe
+      ctx.rotate(t * 7);   // about a turn a second, and three blades: it
+                           // aliases somewhere past speed="9", the way any
+                           // wheel does on film, which is a fair price for a
+                           // dancer already flailing ten times too fast
       ctx.fillStyle = '#767e8e';
       for (let i = 0; i < 3; i++) {
         ctx.rotate(Math.PI * 2 / 3);
@@ -1636,6 +1639,11 @@
       pump(to) {
         if (held()) {   // no frames to breathe with, so it lands at once
           air = null;
+          // Whatever was breathing has just landed, arrival included. Without
+          // this an arrival interrupted off screen and then pumped while held
+          // -- the hours tick does it every minute -- would be left pending
+          // with no breath to ever finish it, and never told at all.
+          landed();
           resting = to;
           updateLift(t);
           return render();

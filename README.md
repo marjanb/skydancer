@@ -62,7 +62,7 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `face`       | `happy`   | `happy`, `surprised`, `cool`, `wink`, `joy`, `sleepy` or `angry` |
 | `pattern`    | `none`    | markings on the body: `none`, `rings` or `spiral` |
 | `hair`       | `true`    | `false` hides the hair                     |
-| `fan`        | `true`    | `false` takes the blower away and leaves it floating |
+| `fan`        | `true`    | `false` takes away the blower it stands on |
 | `count`      | `1`       | how many dancers stand together (max 6)    |
 | `variety`    | `false`   | `true` gives each dancer in a crowd its own colour, face, girth, arms and hair |
 | `paused`     | `false`   | `true` holds the pose; the dancer stays on show, it just stops |
