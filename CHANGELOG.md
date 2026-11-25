@@ -4,9 +4,9 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
-## Unreleased
+## v2.15.1 — 2026-11-25
 
-- **`glow="dark"` is gone**, a few hours after it arrived. `glow` is `none`
+- **`glow="dark"` is gone**, two days after it arrived. `glow` is `none`
   or `on`. A tag still saying `dark` is simply unlit, and the customizer
   drops the value from a link that carries it.
 - A theme is noticed wherever the page puts it. Only `<html>` was watched
@@ -15,9 +15,9 @@ look when a dancer starts looking different.
   element from the dancer up is watched now, following the page as it is
   laid out rather than as it is written -- out through a shadow boundary,
   and out through a slot to whatever surrounds it -- and the re-reads are
-  collected into one a frame, since an ancestor
-  whose inline style is rewritten every frame would otherwise buy a style
-  recalculation per mutation.
+  collected into one a frame, since an ancestor whose inline style is
+  rewritten every frame would otherwise buy a style recalculation per
+  mutation.
 
 ## v2.15.0 — 2026-11-23
 
