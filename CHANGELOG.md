@@ -4,7 +4,7 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
-## Unreleased
+## v2.16.0 — 2026-11-25
 
 - The still pose is a pose. A reader whose system asks for less motion, or a
   page that sets `speed="0"`, gets one frame and no more, and that frame was
