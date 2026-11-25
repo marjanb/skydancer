@@ -4,6 +4,19 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
+## Unreleased
+
+- A dancer can be taken hold of. Dragging across one bends the tube towards
+  the hand, hardest where it was grabbed and dying away up and down the body
+  -- and along the row, so a hand on one of a crowd does not fold all six.
+  Let go and it springs back past upright and rings down. A press that stays
+  put is still a poke, which is the one thing this changes: a poke lands on
+  the release now rather than on the press, since until the hand moves or
+  lifts there is no telling which of the two it was. A drag that ends on a
+  dancer with an `href` no longer follows it. On a phone a sideways drag is
+  the tube's, while scrolling and zooming stay the reader's -- and a touch
+  the browser takes over for one of those is never a poke.
+
 ## v2.15.1 — 2026-11-25
 
 - **`glow="dark"` is gone**, two days after it arrived. `glow` is `none`

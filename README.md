@@ -152,7 +152,17 @@ has settled. The fill takes the best part of a second, which is what makes it
 worth waiting for; on a held pose, or on one deliberately deflated, there is
 nothing to fill and it fires straight away.
 
-Poking a dancer knocks the air out of it. Where the viewer's system asks for reduced motion, it holds a still pose instead of animating.
+Poking a dancer knocks the air out of it. Dragging across one takes hold of
+the tube: it folds over towards the hand on it and springs back when it is
+let go, hardest where it was grabbed and dying away along the body, so a
+crowd does not all bend to one hand. A press that stays put is a poke and a
+press that travels is a hold, which is why a poke lands on the release rather
+than the press -- and why a drag that happens to end on a dancer with an
+`href` does not follow it. Scrolling and zooming stay the reader's: a touch
+the browser takes over for one of those is never a poke.
+
+Where the viewer's system asks for reduced motion, it holds a still pose
+instead of animating, and a hand on a held dancer changes nothing.
 
 ## Customizer
 

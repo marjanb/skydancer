@@ -336,6 +336,9 @@
       display: block;
       width: 100%;
       height: 100%;
+      /* A sideways drag takes hold of the tube, so it cannot also be the page
+         panning sideways. Scrolling and zooming are the reader's either way. */
+      touch-action: pan-y pinch-zoom;
       /* no backdrop of its own: it stands on whatever the page puts behind it */
     }
     /* Where a click on the dancer leads. The canvas takes the click, but a
@@ -613,6 +616,9 @@
     // shift-click and the rest behave as they would anywhere, and the middle
     // button is heard too.
     function follow(e) {
+      // A drag ends in a click as far as the browser is concerned. It is not
+      // one: a reader who pulled the tube over did not ask to leave the page.
+      if (dragged) { dragged = false; return; }
       if (!destination()) return;
       leadsTo.dispatchEvent(new MouseEvent('click', {
         bubbles: true, cancelable: true, view: window, button: e.button,
@@ -675,8 +681,93 @@
     // A reader's poke is worth telling the page about. The page's own cheer()
     // is not: it already knows that it asked.
     const poked = () => burst(true);
-    canvas.addEventListener('pointerdown', poked, { signal: events.signal });
     pokeButton.addEventListener('click', poked, { signal: events.signal });
+
+    // Taking hold of it. A real one asks to be grabbed: the tube comes over
+    // with the hand on it and springs back when it is let go. A press that
+    // stays put is still a poke -- which is why a poke waits for the release
+    // now, since until the hand moves or lifts there is no telling which of
+    // the two it was.
+    const GRAB_SLOP = 8;      // CSS px of travel before a press has become a hold
+    const GRAB_REACH = 0.32;  // a drag of this much of the height is all the pull there is
+    const GRAB_BEND = 0.07;   // radians a segment bends at full pull
+    const SPRING = 1.1;       // seconds the ring takes to die away once it is let go
+    let press = null;         // { id, x0, y0, x, u, pull, holding } while a pointer is down
+    let spring = null;        // { x, u, from, start } once it has been let go
+    let dragged = false;      // that release was a drag, so the click after it is not one
+
+    canvas.addEventListener('pointerdown', e => {
+      dragged = false;
+      // One hand at a time. The second finger of a pinch, or a right button
+      // with the left already down, would otherwise take the first one's
+      // place and leave its half-finished gesture to be ended by the wrong
+      // release. A held pose is held, too: a hand on one changes nothing and
+      // a tap on one has nothing to poke.
+      if (press || e.button !== 0 || !e.isPrimary || held() || !visible) return;
+      const unit = canvas.clientHeight / REF_HEIGHT || 1;
+      press = {
+        id: e.pointerId,
+        x0: e.offsetX,
+        y0: e.offsetY,
+        x: e.offsetX / unit,                                      // which dancer the hand is on
+        u: Math.max(0.05, Math.min(0.95, 1 - e.offsetY / (canvas.clientHeight || 1))),
+        pull: 0,
+        holding: false,
+      };
+      spring = null;
+      // so the tube keeps following a hand that has left the canvas. A page
+      // can dispatch pointer events of its own, and asking to capture one
+      // that was never really down throws.
+      try { canvas.setPointerCapture(e.pointerId); } catch {}
+    }, { signal: events.signal });
+
+    canvas.addEventListener('pointermove', e => {
+      if (!press || e.pointerId !== press.id) return;
+      const travel = e.offsetX - press.x0;
+      // Travel in any direction is what says this is no longer a tap, even
+      // though only the sideways part of it pulls: a drag straight down the
+      // dancer is a reader scrolling, not a reader poking.
+      if (!press.holding && Math.hypot(travel, e.offsetY - press.y0) < GRAB_SLOP) return;
+      press.holding = true;
+      press.pull = Math.max(-1, Math.min(1, travel / (canvas.clientHeight || 1) / GRAB_REACH));
+    }, { signal: events.signal });
+
+    // `poking` only on a release the reader made. A cancelled pointer is the
+    // browser taking the gesture over -- a scroll, a long press, a zoom --
+    // and none of those are a poke, however little the finger had moved.
+    function letGo(e, poking) {
+      if (!press || e.pointerId !== press.id) return;
+      const hand = press;
+      press = null;
+      if (!hand.holding) { if (poking) burst(true); return; }
+      spring = { x: hand.x, u: hand.u, from: hand.pull, start: wall };
+      dragged = true;
+    }
+
+    canvas.addEventListener('pointerup', e => letGo(e, true), { signal: events.signal });
+    canvas.addEventListener('pointercancel', e => letGo(e, false), { signal: events.signal });
+
+    // On the wall clock, not the dance one: a hand is the reader's, and it
+    // should come back at the speed a hand expects whatever `speed` says.
+    function springBack(s) {
+      const p = (wall - s.start) / SPRING;
+      if (p > 1) return 0;
+      // back past upright and ringing down, the way a sprung thing does
+      return s.from * Math.cos(p * Math.PI * 2.2) * (1 - p) ** 2;
+    }
+
+    // The pull is strongest where the hand is and dies away along the tube,
+    // so it folds around the hand rather than leaning as one piece -- and
+    // away along the row as well, so a crowd does not all bend to one hand.
+    function grabBend(u, x) {
+      const hand = press?.holding ? press : null;
+      const pull = hand ? hand.pull : spring ? springBack(spring) : 0;
+      if (!pull) return 0;
+      const at = hand ?? spring;
+      return pull * GRAB_BEND
+        * Math.exp(-(((u - at.u) / 0.3) ** 2))
+        * Math.exp(-(((x - at.x) / (SPACING * H * 0.6)) ** 2));
+    }
 
     // Only offered when a poke has something to say, and when a poke would do
     // anything at all. A dancer is decoration, and a decorative one that is
@@ -920,7 +1011,7 @@
       // start half a girth up so the round end cap stays hidden behind the fan
       const body = chain(x, H - ground() - girth / 2, 0, BODY_SEGS, height / BODY_SEGS, u =>
         w * (0.05 * Math.sin(t * 2.1 - u * 5) + 0.035 * Math.sin(t * 3.7 - u * 9 + 1.3)) * (0.3 + u) + kinkBend(u, t) * limp * look.flail
-        + bowBend(u, t) * look.flail + wind * 0.03 + droop);
+        + bowBend(u, t) * look.flail + grabBend(u, x) + wind * 0.03 + droop);
 
       const shoulder = body[Math.round(BODY_SEGS * 0.66)];
       const arms = [-1, 1].map(side =>
@@ -1654,6 +1745,10 @@
         // page kept it held, which reads as broken rather than as paused.
         // The bow is put off instead; it comes round again once it is let go.
         if (t >= bow.start && t <= bow.start + bow.dur) scheduleBow(t);
+        // Same for a hand: there are no frames to spring back with, so a pose
+        // held mid-pull would stay bent over until something else redrew it.
+        press = null;
+        spring = null;
         return render();
       }
       last = performance.now();
