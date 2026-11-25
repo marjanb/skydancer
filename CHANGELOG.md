@@ -6,6 +6,14 @@ look when a dancer starts looking different.
 
 ## Unreleased
 
+- A crowd behaves like one. Dancers standing together were six copies of the
+  same dance a few seconds apart, each keeping entirely to itself. A dancer
+  throwing itself hard to one side now reaches the one next along, which
+  leans with it a quarter-second later, so the flail travels down the row.
+  It is the dance that carries, and nothing else: a row leaning together in
+  the wind, or one dancer folded over a reader's hand, is the weather or the
+  reader rather than a dancer moving its neighbour, and a row that is not
+  flailing stands exactly where it always stood.
 - A dancer can be taken hold of. Dragging across one bends the tube towards
   the hand, hardest where it was grabbed and dying away up and down the body
   -- and along the row, so a hand on one of a crowd does not fold all six.

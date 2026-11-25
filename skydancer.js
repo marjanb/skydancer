@@ -103,6 +103,12 @@
   const SPACING = 0.55;
   // a crowd looks like a crowd when they aren't all the same size
   const SIZES = [1, 0.84, 0.94, 0.8, 0.9, 0.87];
+  // How far a dancer is carried by a neighbour's fullest throw, per segment,
+  // and how long the air takes to cross the gap between them.
+  const NUDGE = 0.008;
+  const AIR_LAG = 0.25;    // seconds
+  const SHOULDER = 0.66;   // up the body, where the arms hang off
+  const FLAIL_FULL = 0.085;  // the two sines below at their fullest
 
   // A hand-drawn speech balloon's silhouette: the oval sits up and to one
   // side, its tail trailing down to the tip at (tipX, tipY) below.
@@ -936,6 +942,14 @@
       landed();
     }
 
+    // Two sines that never quite line up, which is the whole of the dance:
+    // -1 to 1, before it is weighted towards the top of the tube. Read off
+    // the body chain and again at the shoulder, where a neighbour feels it.
+    function flail(u, t) {
+      return (0.05 * Math.sin(t * 2.1 - u * 5)
+            + 0.035 * Math.sin(t * 3.7 - u * 9 + 1.3)) / FLAIL_FULL;
+    }
+
     // bend that swings a loose chain (arm, hair) round to point downwind
     function blow(a) {
       return Math.abs(wind) * Math.sin(Math.sign(wind) * 1.4 - a);
@@ -954,12 +968,21 @@
 
       const n = count();
       const gap = SPACING * H;
-      // smallest first, so they read as standing further back
-      return Array.from({ length: n }, (_, i) => {
+      // Left to right, because each one is handed what the one before it was
+      // doing a moment ago: a flail travels along a row rather than each
+      // dancer keeping to itself, which is the difference between a row and
+      // six copies.
+      const row = [];
+      let nudge = 0;
+      for (let i = 0; i < n; i++) {
         const look = lookOf(i, n);
         const x = W / 2 + (i - (n - 1) / 2) * gap;
-        return { ...dancerAt(t + i * 3.7, x, SIZES[i % SIZES.length], look), look };
-      }).sort((a, b) => a.girth - b.girth);
+        const one = dancerAt(t + i * 3.7, x, SIZES[i % SIZES.length], look, nudge);
+        row.push({ ...one, look });
+        nudge = one.swing;
+      }
+      // smallest first, so they read as standing further back
+      return row.sort((a, b) => a.girth - b.girth);
     }
 
     // One crowd, one palette: the colours the page chose stay on the first
@@ -987,8 +1010,9 @@
       };
     }
 
-    // one dancer, `k` times the configured size, standing at x
-    function dancerAt(t, x, k, look) {
+    // one dancer, `k` times the configured size, standing at x. `nudge` is
+    // how hard the one on its left is throwing its arm this way.
+    function dancerAt(t, x, k, look, nudge = 0) {
       // a sagging dancer loses some of its snap
       const limp = 0.55 + 0.45 * lift;
       const w = cfg.wildness * (1 + punch * 2.5) * limp * look.flail;
@@ -1010,10 +1034,11 @@
 
       // start half a girth up so the round end cap stays hidden behind the fan
       const body = chain(x, H - ground() - girth / 2, 0, BODY_SEGS, height / BODY_SEGS, u =>
-        w * (0.05 * Math.sin(t * 2.1 - u * 5) + 0.035 * Math.sin(t * 3.7 - u * 9 + 1.3)) * (0.3 + u) + kinkBend(u, t) * limp * look.flail
-        + bowBend(u, t) * look.flail + grabBend(u, x) + wind * 0.03 + droop);
+        w * flail(u, t) * FLAIL_FULL * (0.3 + u) + kinkBend(u, t) * limp * look.flail
+        + bowBend(u, t) * look.flail + grabBend(u, x) + wind * 0.03 + droop
+        + nudge * NUDGE * (0.3 + u) * look.flail);
 
-      const shoulder = body[Math.round(BODY_SEGS * 0.66)];
+      const shoulder = body[Math.round(BODY_SEGS * SHOULDER)];
       const arms = [-1, 1].map(side =>
         chain(shoulder.x, shoulder.y,
           shoulder.a + side * (1.1 + w * 0.4 * Math.sin(t * 2.6 + side)),
@@ -1025,7 +1050,13 @@
         chain(top.x, top.y, top.a + j * 0.3, HAIR_SEGS, girth * 0.14, (v, a) =>
           w * 0.25 * Math.sin(t * 9 - v * 4 + j * 1.7) + 0.5 * blow(a)));
 
-      return { body, arms, hair, girth, x, t };
+      // What the dancer to its right feels, a beat after it happened, since
+      // the air an arm throws takes a moment to cross the gap. Its flail and
+      // nothing else: a row leaning together in the wind, or one dancer
+      // folded over a reader's hand, is the weather or the reader -- not a
+      // dancer moving its neighbour. Zero when it is not flailing at all.
+      const swing = flail(SHOULDER, t - AIR_LAG) * Math.min(1, w);
+      return { body, arms, hair, girth, x, t, swing };
     }
 
     // ---- drawing ----
