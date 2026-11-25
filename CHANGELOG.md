@@ -6,6 +6,15 @@ look when a dancer starts looking different.
 
 ## Unreleased
 
+- The still pose is a pose. A reader whose system asks for less motion, or a
+  page that sets `speed="0"`, gets one frame and no more, and that frame was
+  drawn at the very start of the dance clock, where the two halves of the
+  flail cancel and the arms sit at much the same height -- a tube man standing
+  to attention rather than one caught mid-dance. The clock starts a little
+  further in now, so the still frame has the body curved and the arms at
+  different heights, and a still crowd reads as three poses rather than three
+  copies. Everything scheduled against the clock moved along with it, so a
+  dancer that does run is unchanged.
 - `worn` is a dancer that has been out in the weather a season too long: the
   colours bleached towards a pale, washed-out version of themselves, two
   strips of tape over tears up the body, and arm ends split into ribbons.

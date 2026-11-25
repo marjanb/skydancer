@@ -163,7 +163,9 @@ than the press -- and why a drag that happens to end on a dancer with an
 the browser takes over for one of those is never a poke.
 
 Where the viewer's system asks for reduced motion, it holds a still pose
-instead of animating, and a hand on a held dancer changes nothing.
+instead of animating, and a hand on a held dancer changes nothing. The pose
+it holds is a dancing one -- curved, with the arms at different heights --
+rather than the dancer standing to attention.
 
 ## Customizer
 

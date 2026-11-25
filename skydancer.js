@@ -238,6 +238,15 @@
     return { h: h * 60, s: span / (1 - Math.abs(2 * l - 1)) * 100, l: l * 100 };
   }
 
+  // Where the dance clock starts. A reader who asked for less motion, or a
+  // page that asked for `speed="0"`, gets one frame and no more, and at zero
+  // the two sines of the flail have the arms at much the same height, which
+  // reads as a tube man standing to attention rather than one caught in the
+  // middle of its dance. Everything timed from the clock starts here too --
+  // the kink, the bow, the gusts, the sag, and the sign working through its
+  // phrases -- so a dancer that does run is unchanged.
+  const POSE = 1.2;
+
   // How much of a round cap the head keeps. A line cap can only be a
   // semicircle, so a flatter top than that has to be cut and re-edged.
   const FLAT = 0.55;
@@ -519,7 +528,7 @@
 
     // A kink is the tube losing pressure and folding over; the fold travels up
     // and out of the top as the air refills.
-    let kink = { start: 2, dur: 1.5, dir: 1, mag: 0.4 };
+    let kink = { start: POSE + 2, dur: 1.5, dir: 1, mag: 0.4 };
 
     function kinkBend(u, t) {
       const p = (t - kink.start) / kink.dur;
@@ -534,7 +543,7 @@
     // On the dance clock like everything else, so `speed` carries it, a held
     // pose never reaches one, and in a crowd they go one after another --
     // each dancer is a few seconds further along the same clock.
-    let bow = { start: 30 + Math.random() * 40, dur: 2.4, dir: 1 };
+    let bow = { start: POSE + 30 + Math.random() * 40, dur: 2.4, dir: 1 };
 
     function scheduleBow(t) {
       bow = {
@@ -561,7 +570,7 @@
     // page going by underneath, and random gusts, scaled by the wind setting
     // and smoothed.
     let pointerWind = 0, wind = 0;
-    let gust = { start: 4, dur: 2, force: 0.7 };
+    let gust = { start: POSE + 4, dur: 2, force: 0.7 };
     // The page scrolling past is wind too: the faster it goes, the harder the
     // dancer is blown along with it. Sampled per frame from the scroll
     // position rather than from scroll events, so a smooth scroll, a flick and
@@ -856,7 +865,8 @@
       if (raw !== split.raw) split = { raw, phrases: phrasesOf(raw) };
       const { phrases } = split;
       if (phrases.length < 2) return phrases[0] ?? '';
-      return phrases[Math.floor(Math.max(0, t) / DWELL) % phrases.length];
+      // from where the clock starts, so the first phrase gets its full turn
+      return phrases[Math.floor(Math.max(0, t - POSE) / DWELL) % phrases.length];
     }
 
     // The words only reach the DOM when they change: this runs every frame.
@@ -899,7 +909,7 @@
 
     // Every so often the air can't keep up and the dancer sags: it dips lower
     // in the body for a moment, then fills again. `lift` is 1 at full height.
-    let sag = { start: 6, dur: 1.1, depth: 0.4, side: 1 };
+    let sag = { start: POSE + 6, dur: 1.1, depth: 0.4, side: 1 };
     let lift = 1;
     // `slump` is the sag on its own and `filled` is how much air is in the
     // tube. A sag bows the cloth over without shortening it; air really does
@@ -1806,7 +1816,7 @@
     // plain seconds. Filling with air is a transition rather than part of the
     // dance, so it goes by the wall: at speed="0" the dance stands still, but
     // a dancer still has to finish arriving.
-    let t = 0, wall = 0, last = performance.now(), raf, frameDt = 0, depthShade;
+    let t = POSE, wall = 0, last = performance.now(), raf, frameDt = 0, depthShade;
 
     function render() { draw(simulate(t)); }
 
