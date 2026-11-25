@@ -92,6 +92,11 @@
   const BODY_SEGS = 28;
   const ARM_SEGS = 12;
   const HAIR_SEGS = 6;
+  // How wide an arm and a strand of hair are drawn, against the body's girth.
+  // The ground wants them as much as the drawing does: what has to stop at it
+  // is the edge of a tube, not the line down the middle of one.
+  const ARM_WIDE = 0.38;
+  const HAIR_WIDE = 0.1;
   // Everything is drawn in units of a REF_HEIGHT-tall widget and scaled to the
   // real height, so the dancer keeps its proportions at any size.
   const REF_HEIGHT = 1000;
@@ -508,9 +513,15 @@
 
     // The tube is held inside the canvas the way the ground already holds its
     // feet: a wild gust presses it against the edge instead of running past it,
-    // so nothing is ever cut off, whatever the settings.
-    function chain(x, y, a, n, segLen, bend) {
-      const floor = H - ground();
+    // so nothing is ever cut off, whatever the settings. `width` is how wide
+    // this chain is drawn, because what has to stop at the ground is the edge
+    // of a tube rather than the line down the middle of one -- a tube lying on
+    // the ground has that line half a width up. Without the allowance a poke
+    // folded the lower half of the body through the ground.
+    function chain(x, y, a, n, segLen, bend, width) {
+      // the outline is drawn 3 past the colour on either side, so it is the
+      // one with the ground to clear
+      const floor = H - ground() - width / 2 - 3;
       const edge = cfg.girth * fattest() * 0.62 + 8;  // half the tube, plus its outline
       // The lid takes no allowance for the fattest tube. The tallest dancer's
       // head already sits just under it, and widening it there would press the
@@ -1074,23 +1085,26 @@
       // angle, past which the floor clamp would eat the tube's length
       const droop = (1 - slump) * 0.042 * falls;
 
-      // start half a girth up so the round end cap stays hidden behind the fan
+      // Start half a girth up, so the round end cap stays hidden behind the
+      // fan. That is also where a tube lying flat rests, so the body stands on
+      // its own floor and cannot bend down past its feet.
       const body = chain(x, H - ground() - girth / 2, 0, BODY_SEGS, height / BODY_SEGS, u =>
         w * flail(u, t) * FLAIL_FULL * (0.3 + u) + kinkBend(u, t) * limp * look.flail
         + bowBend(u, t) * look.flail + grabBend(u, x) + wind * 0.03 + droop
-        + nudge * NUDGE * (0.3 + u) * look.flail);
+        + nudge * NUDGE * (0.3 + u) * look.flail, girth);
 
       const shoulder = body[Math.round(BODY_SEGS * SHOULDER)];
       const arms = [-1, 1].map(side =>
         chain(shoulder.x, shoulder.y,
           shoulder.a + side * (1.1 + w * 0.4 * Math.sin(t * 2.6 + side)),
           ARM_SEGS, height * cfg.armLength * look.arms / ARM_SEGS, (v, a) =>
-            w * (0.12 * Math.sin(t * 4.3 - v * 6 + side * 2) + 0.08 * Math.sin(t * 6.1 - v * 10)) * (0.4 + v) + 0.12 * blow(a)));
+            w * (0.12 * Math.sin(t * 4.3 - v * 6 + side * 2) + 0.08 * Math.sin(t * 6.1 - v * 10)) * (0.4 + v) + 0.12 * blow(a),
+          girth * ARM_WIDE));
 
       const top = body[BODY_SEGS];
       const hair = !look.hair ? [] : [-2, -1, 0, 1, 2].map(j =>
         chain(top.x, top.y, top.a + j * 0.3, HAIR_SEGS, girth * 0.14, (v, a) =>
-          w * 0.25 * Math.sin(t * 9 - v * 4 + j * 1.7) + 0.5 * blow(a)));
+          w * 0.25 * Math.sin(t * 9 - v * 4 + j * 1.7) + 0.5 * blow(a), girth * HAIR_WIDE));
 
       // What the dancer to its right feels, a beat after it happened, since
       // the air an arm throws takes a moment to cross the gap. Its flail and
@@ -1399,8 +1413,8 @@
         const spill = Math.max(girth, H * 0.05) * spread;
         ctx.globalAlpha = alpha;
         strokeChain(body, girth + spill, look.color);
-        for (const arm of arms) strokeChain(arm, girth * 0.38 + spill, look.accent);
-        for (const strand of hair) strokeChain(strand, girth * 0.1 + spill, look.accent);
+        for (const arm of arms) strokeChain(arm, girth * ARM_WIDE + spill, look.accent);
+        for (const strand of hair) strokeChain(strand, girth * HAIR_WIDE + spill, look.accent);
       }
       ctx.restore();
     }
@@ -1767,10 +1781,10 @@
         }
       }
       for (const { body, arms, hair, girth, x, t, look } of dancers) {
-        for (const strand of hair) strokeChain(strand, girth * 0.1 + 4, OUTLINE);
-        for (const strand of hair) strokeChain(strand, girth * 0.1, look.accent);
-        if (cfg.worn) for (const arm of arms) drawFray(arm, girth * 0.38, look.accent);
-        for (const arm of arms) drawTube(arm, girth * 0.38, look.accent);
+        for (const strand of hair) strokeChain(strand, girth * HAIR_WIDE + 4, OUTLINE);
+        for (const strand of hair) strokeChain(strand, girth * HAIR_WIDE, look.accent);
+        if (cfg.worn) for (const arm of arms) drawFray(arm, girth * ARM_WIDE, look.accent);
+        for (const arm of arms) drawTube(arm, girth * ARM_WIDE, look.accent);
         drawTube(body, girth, look.color, FLAT, cfg.pattern, look.accent,
                  String(cfg.print ?? '').trim(), cfg.worn);
         // the last drawn is the front-most, since they are sorted by girth

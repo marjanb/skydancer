@@ -4,6 +4,17 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
+## Unreleased
+
+- **Fixed:** the ground held the line down the middle of a tube rather than
+  its edge, so anything thrown hard enough to be pressed against it put its
+  lower half through the floor: a poke folded the body a fifth of a girth
+  under the ground, and at a wild setting or under a reader's hand the tube
+  ran off the bottom of the canvas and was cut off there. Each chain is held
+  half its own drawn width up now, so the body, the arms and the hair each
+  come to rest on the ground instead of crossing it. A dancer that never
+  reaches the ground is pixel for pixel what it was.
+
 ## v2.16.0 — 2026-11-25
 
 - The still pose is a pose. A reader whose system asks for less motion, or a
