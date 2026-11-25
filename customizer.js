@@ -332,7 +332,7 @@ function apply(el) {
     .filter(input => !(input.dataset.key === 'href' && !input.value.trim()))
     .filter(input => !(['print', 'placard', 'shout', 'hours'].includes(input.dataset.key)
                        && !input.value.trim()))
-    .filter(input => !(input.dataset.key === 'variety' && !input.checked))
+    .filter(input => !(['variety', 'worn'].includes(input.dataset.key) && !input.checked))
     .map(input => `${input.dataset.key}="${escapeAttr(readInput(input))}"`).join(' ');
   showSource();
   // don't rewrite the box someone is typing or pasting into
@@ -521,7 +521,11 @@ document.getElementById('randomize').addEventListener('click', () => {
     // one is ever disabled, so only that one is held back.
     if (shelved(el)) continue;   // out of sight, so leave it at its default
     if (el.type === 'checkbox') {
-      el.checked = Math.random() < 0.7 && !(el === variety && variety.disabled);
+      // Worn is a state, not a coin toss: at the same odds as the rest, most
+      // of what Surprise me handed out would be bleached and taped, and the
+      // look would stop meaning anything.
+      const odds = el.dataset.key === 'worn' ? 0.2 : 0.7;
+      el.checked = Math.random() < odds && !(el === variety && variety.disabled);
     }
     else if (el.type === 'range') el.value = +el.min + Math.random() * (el.max - el.min);
     else if (el.type === 'color') el.value = `#${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, '0')}`;

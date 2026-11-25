@@ -6,6 +6,11 @@ look when a dancer starts looking different.
 
 ## Unreleased
 
+- `worn` is a dancer that has been out in the weather a season too long: the
+  colours bleached towards a pale, washed-out version of themselves, two
+  strips of tape over tears up the body, and arm ends split into ribbons.
+  Bleaching is towards a tone rather than simply lighter, so a dark one comes
+  up to charcoal and a pale accent does not turn white and disappear.
 - A crowd behaves like one. Dancers standing together were six copies of the
   same dance a few seconds apart, each keeping entirely to itself. A dancer
   throwing itself hard to one side now reaches the one next along, which

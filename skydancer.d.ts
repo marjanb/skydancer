@@ -73,6 +73,9 @@ export interface SkyDancerAttributes {
   face?: SkyDancerFace;
   /** `false` hides the hair. Default `true`. */
   hair?: string | boolean;
+  /** One that has been out in the weather a season too long: the colours
+   * bleached, tape over a tear, frayed arm ends. Default `false`. */
+  worn?: string | boolean;
   /** How many stand together, 1 to 6. Default `1`. */
   count?: string | number;
   /** Give a crowd a colour, face and build each. Default `false`. */

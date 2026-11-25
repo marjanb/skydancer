@@ -23,6 +23,7 @@
     wind: 1,          // 0 = calm; scales pointer wind and gusts
     face: 'happy',    // happy | surprised | cool | wink | joy | sleepy | angry
     hair: true,
+    worn: false,      // one that has been out in the weather a season too long
     count: 1,         // how many dancers stand together
     variety: false,   // give a crowd a colour and a face each, instead of one look
     paused: false,    // hold the pose; the dancer stays on show, it just stops
@@ -276,6 +277,36 @@
   ];
   const FATTEST = Math.max(...VARIETY.map(v => v.girth));
   const spinCache = new Map();
+  const wornCache = new Map();
+
+  // What a season in the sun does to one: the colour goes before the cloth
+  // does. Cached like the rest of the colour work, since reading a CSS colour
+  // means painting it and reading the pixel back.
+  function weathered(css) {
+    let out = wornCache.get(css);
+    if (!out) {
+      const { h, s, l } = hsl(css);
+      // Towards a bleached tone rather than simply lighter: the sun takes a
+      // dark colour up and a pale one very slightly down, and a pale accent
+      // that only ever got lighter would end up white and disappear.
+      out = `hsl(${h} ${s * 0.48}% ${l + (BLEACH - l) * 0.34}%)`;
+      if (wornCache.size > 64) wornCache.clear();
+      wornCache.set(css, out);
+    }
+    return out;
+  }
+
+  // Tape over a tear, and the grime along its edge. Enough to read as a
+  // repair at a glance and not so much that it becomes the thing you look at.
+  const BLEACH = 80;   // the lightness everything weathers towards
+  const TAPE = 'rgba(246, 241, 226, 0.62)';
+  const TAPE_EDGE = 'rgba(26, 26, 46, 0.22)';
+  // where the patches sit up the body, how far they lie off square, and how
+  // long they are as a fraction of the reference height
+  const PATCHES = [
+    { u: 0.34, turn: 0.52, long: 0.055 },
+    { u: 0.66, turn: -0.38, long: 0.042 },
+  ];
 
   // the same colour walked round the wheel, for telling a crowd apart
   function spin(css, deg) {
@@ -990,8 +1021,9 @@
     // reads as a set rather than as several unrelated widgets. Faces rotate
     // from the chosen one for the same reason.
     function lookOf(i, n) {
-      const base = themed.color ?? cfg.color;
-      const accent = themed.accent ?? cfg.accent;
+      const worn = cfg.worn;
+      const base = worn ? weathered(themed.color ?? cfg.color) : themed.color ?? cfg.color;
+      const accent = worn ? weathered(themed.accent ?? cfg.accent) : themed.accent ?? cfg.accent;
       const plain = { color: base, accent, face: cfg.face,
                       girth: 1, arms: 1, flail: 1, hair: cfg.hair };
       if (!cfg.variety || n < 2) return plain;
@@ -1107,6 +1139,41 @@
       path.arc(first.x, first.y, r, first.a + Math.PI, first.a, true);
       path.closePath();
       return path;
+    }
+
+    // Tape over a tear, placed by the body's own points so it rides with the
+    // tube. Drawn where the markings are, inside the tube's clip: under the
+    // shading, which then falls across it, and under any printed words,
+    // since a page that asked for a word on the body should be able to read
+    // it and a sign painter would have gone over the repair anyway.
+    function drawPatches(pts, width) {
+      for (const { u, turn, long } of PATCHES) {
+        const p = pts[Math.round((pts.length - 1) * u)];
+        const len = H * long, across = width * 1.3;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.a + turn);
+        ctx.fillStyle = TAPE;
+        ctx.fillRect(-across / 2, -len / 2, across, len);
+        ctx.strokeStyle = TAPE_EDGE;
+        ctx.lineWidth = Math.max(1, width * 0.03);
+        ctx.strokeRect(-across / 2, -len / 2, across, len);
+        ctx.restore();
+      }
+    }
+
+    // The end of an arm goes first on a real one: the stitching lets go and
+    // the cloth splits into ribbons that never quite keep up with the rest.
+    function drawFray(pts, width, color) {
+      const tip = pts[pts.length - 1];
+      for (const j of [-1, 0, 1]) {
+        const a = tip.a + j * 0.5;
+        const len = width * (j ? 1.1 : 1.5);
+        const end = { x: tip.x + Math.sin(a) * len, y: tip.y - Math.cos(a) * len, a };
+        const strand = [tip, end];
+        strokeChain(strand, width * 0.34 + 4, OUTLINE);
+        strokeChain(strand, width * 0.34, color);
+      }
     }
 
     // The flattened cap, painted rather than clipped. Clipping it meant a
@@ -1243,7 +1310,8 @@
       ctx.stroke();
     }
 
-    function drawTube(pts, width, color, flat = 1, pattern = 'none', ink = color, print = '') {
+    function drawTube(pts, width, color, flat = 1, pattern = 'none', ink = color,
+                      print = '', worn = false) {
       const end = pts[pts.length - 1];
       const r = width / 2;
       const trimming = flat < 1;
@@ -1282,6 +1350,7 @@
       ctx.save();
       ctx.clip(tubePath(pts, width, flat));
       if (pattern !== 'none') drawPattern(pts, width, pattern, ink);
+      if (worn) drawPatches(pts, width);
       if (print) printDown(pts, width, print, ink);
       for (let i = 0; i < TONES; i++) {
         const ink = tones[i];
@@ -1690,9 +1759,10 @@
       for (const { body, arms, hair, girth, x, t, look } of dancers) {
         for (const strand of hair) strokeChain(strand, girth * 0.1 + 4, OUTLINE);
         for (const strand of hair) strokeChain(strand, girth * 0.1, look.accent);
+        if (cfg.worn) for (const arm of arms) drawFray(arm, girth * 0.38, look.accent);
         for (const arm of arms) drawTube(arm, girth * 0.38, look.accent);
         drawTube(body, girth, look.color, FLAT, cfg.pattern, look.accent,
-                 String(cfg.print ?? '').trim());
+                 String(cfg.print ?? '').trim(), cfg.worn);
         // the last drawn is the front-most, since they are sorted by girth
         lastChest = body[Math.round(BODY_SEGS * 0.55)];   // for blurted words
         drawFace(body[Math.round(BODY_SEGS * 0.87)], girth, t, look.face);

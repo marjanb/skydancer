@@ -63,6 +63,7 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `pattern`    | `none`    | markings on the body: `none`, `rings`, `spiral`, `dots` or `chevrons` |
 | `glow`       | `none`    | `on` lights it from inside                 |
 | `hair`       | `true`    | `false` hides the hair                     |
+| `worn`       | `false`   | `true` for one that has been out in the weather: colours bleached, tape over a tear, frayed arm ends |
 | `count`      | `1`       | how many dancers stand together (max 6); a hard flail carries to the next one along |
 | `variety`    | `false`   | `true` gives each dancer in a crowd its own colour, face, girth, arms and hair |
 | `paused`     | `false`   | `true` holds the pose; the dancer stays on show, it just stops |
