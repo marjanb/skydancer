@@ -6,7 +6,7 @@ look when a dancer starts looking different. An embed still on `@2` stays on
 the last `v2.x.x` tag and goes on working, crowd and all; it simply stops
 getting anything new.
 
-## Unreleased
+## v3.0.1 — 2026-11-26
 
 - **Fixed:** a dancer with both a `sign` and an `href` put the same words in
   front of a screen reader twice -- once as the hidden copy of the sign, and
