@@ -97,6 +97,15 @@
   // is the edge of a tube, not the line down the middle of one.
   const ARM_WIDE = 0.38;
   const HAIR_WIDE = 0.1;
+  // The leanest an arm is drawn, long against wide, and the shortest body it
+  // will measure itself against, in girths. Between them they keep a very fat
+  // tube from losing its arms. The slimness bites whenever an arm is short for
+  // the tube it hangs off: at the default `arm-length` that means a girth past
+  // about 160, or about 130 in a crowd where one of them is a third fatter
+  // than the rest, both of which are past anything the customizer offers -- but
+  // a small `arm-length` is a short arm at any girth, and is slimmed to match.
+  const ARM_SLIM = 3.6;
+  const ARM_BODY = 3.6;
   // Everything is drawn in units of a REF_HEIGHT-tall widget and scaled to the
   // real height, so the dancer keeps its proportions at any size.
   const REF_HEIGHT = 1000;
@@ -1094,12 +1103,27 @@
         + nudge * NUDGE * (0.3 + u) * look.flail, girth);
 
       const shoulder = body[Math.round(BODY_SEGS * SHOULDER)];
-      const arms = [-1, 1].map(side =>
+      // An arm is a fraction of the body's height, which is the right measure
+      // right up until a fat tube leaves no body to take a fraction of: the
+      // head alone wants 1.6 girths off the top of the box, so at girth 400 an
+      // arm came out 83 long and 152 wide, buried inside the tube it hangs off
+      // -- an ear, not an arm. So it measures a body that stops getting
+      // shorter, and when something has to give it gives up width rather than
+      // length, since length is what gets it clear of the body. The fraction
+      // stays on the outside, so `arm-length="0"` is still no arms at all, and
+      // the air still carries it: a flat dancer has no arms out either.
+      const armLen = cfg.armLength * look.arms
+        * Math.max(height, girth * ARM_BODY * filled);
+      const armWidth = Math.min(girth * ARM_WIDE, armLen / ARM_SLIM);
+      // No width is no arms, the way no hair is none below: a dancer with the
+      // air out of it, or one asked for `arm-length="0"`, has nothing to draw,
+      // and a zero-width stroke is the one width a canvas quietly ignores.
+      const arms = armWidth <= 0 ? [] : [-1, 1].map(side =>
         chain(shoulder.x, shoulder.y,
           shoulder.a + side * (1.1 + w * 0.4 * Math.sin(t * 2.6 + side)),
-          ARM_SEGS, height * cfg.armLength * look.arms / ARM_SEGS, (v, a) =>
+          ARM_SEGS, armLen / ARM_SEGS, (v, a) =>
             w * (0.12 * Math.sin(t * 4.3 - v * 6 + side * 2) + 0.08 * Math.sin(t * 6.1 - v * 10)) * (0.4 + v) + 0.12 * blow(a),
-          girth * ARM_WIDE));
+          armWidth));
 
       const top = body[BODY_SEGS];
       const hair = !look.hair ? [] : [-2, -1, 0, 1, 2].map(j =>
@@ -1112,7 +1136,7 @@
       // folded over a reader's hand, is the weather or the reader -- not a
       // dancer moving its neighbour. Zero when it is not flailing at all.
       const swing = flail(SHOULDER, t - AIR_LAG) * Math.min(1, w);
-      return { body, arms, hair, girth, x, t, swing };
+      return { body, arms, hair, girth, armWidth, x, t, swing };
     }
 
     // ---- drawing ----
@@ -1403,7 +1427,7 @@
     // reaches as far from a thin arm as from a fat body.
     const HALO = [[1.0, 0.07], [0.62, 0.09], [0.3, 0.12]];   // spread, alpha
 
-    function glowAround(body, arms, hair, girth, look) {
+    function glowAround(body, arms, hair, girth, armWidth, look) {
       ctx.save();
       ctx.lineCap = 'round';
       for (const [spread, alpha] of HALO) {
@@ -1413,7 +1437,7 @@
         const spill = Math.max(girth, H * 0.05) * spread;
         ctx.globalAlpha = alpha;
         strokeChain(body, girth + spill, look.color);
-        for (const arm of arms) strokeChain(arm, girth * ARM_WIDE + spill, look.accent);
+        for (const arm of arms) strokeChain(arm, armWidth + spill, look.accent);
         for (const strand of hair) strokeChain(strand, girth * HAIR_WIDE + spill, look.accent);
       }
       ctx.restore();
@@ -1776,15 +1800,15 @@
       // light is behind all of them, and a fat one in front would otherwise
       // wash out the body of the one standing behind it.
       if (lit()) {
-        for (const { body, arms, hair, girth, look } of dancers) {
-          glowAround(body, arms, hair, girth, look);
+        for (const { body, arms, hair, girth, armWidth, look } of dancers) {
+          glowAround(body, arms, hair, girth, armWidth, look);
         }
       }
-      for (const { body, arms, hair, girth, x, t, look } of dancers) {
+      for (const { body, arms, hair, girth, armWidth, x, t, look } of dancers) {
         for (const strand of hair) strokeChain(strand, girth * HAIR_WIDE + 4, OUTLINE);
         for (const strand of hair) strokeChain(strand, girth * HAIR_WIDE, look.accent);
-        if (cfg.worn) for (const arm of arms) drawFray(arm, girth * ARM_WIDE, look.accent);
-        for (const arm of arms) drawTube(arm, girth * ARM_WIDE, look.accent);
+        if (cfg.worn) for (const arm of arms) drawFray(arm, armWidth, look.accent);
+        for (const arm of arms) drawTube(arm, armWidth, look.accent);
         drawTube(body, girth, look.color, FLAT, cfg.pattern, look.accent,
                  String(cfg.print ?? '').trim(), cfg.worn);
         // the last drawn is the front-most, since they are sorted by girth

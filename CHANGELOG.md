@@ -4,6 +4,19 @@ Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
 look when a dancer starts looking different.
 
+## Unreleased
+
+- **Fixed:** a very fat dancer had no arms. An arm is a fraction of the body's
+  height, and the head alone wants 1.6 girths off the top of the box, so there
+  was almost nothing left to take a fraction of: at `girth="400"` an arm came
+  out 83 long and 152 wide, buried inside the tube it hangs off, and from about
+  `girth="220"` they read as ears rather than arms. An arm now measures a body
+  that stops getting shorter, and gives up width rather than length when
+  something has to give, since length is what gets it clear of the body.
+  `arm-length` still says how long, `arm-length="0"` is still no arms, and a
+  dancer that is thinner than about `girth="160"` -- which is every dancer the
+  customizer can make -- is pixel for pixel what it was.
+
 ## v2.16.1 — 2026-11-26
 
 - **Fixed:** the ground held the line down the middle of a tube rather than

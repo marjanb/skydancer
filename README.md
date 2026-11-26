@@ -52,7 +52,7 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `color`      | `#ff3b30` | body colour                                |
 | `accent`     | `#ffd60a` | arms and hair colour                       |
 | `girth`      | `64`      | body thickness (px at 1000px widget height) |
-| `arm-length` | `0.32`    | arm length as a fraction of body height    |
+| `arm-length` | `0.32`    | arm length as a fraction of body height. A very fat dancer has little body left under its head, so it measures a taller one and keeps its arms; `0` is no arms at all |
 | `speed`      | `1`       | animation speed                            |
 | `wildness`   | `1`       | how much it flails                         |
 | `wind`       | `1`       | wind strength; `0` is calm. Scales the gusts, the pointer, and the page scrolling past |
