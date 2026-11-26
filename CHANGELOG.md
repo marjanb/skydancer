@@ -6,6 +6,22 @@ look when a dancer starts looking different. An embed still on `@2` stays on
 the last `v2.x.x` tag and goes on working, crowd and all; it simply stops
 getting anything new.
 
+## Unreleased
+
+- **Fixed:** a dancer with both a `sign` and an `href` put the same words in
+  front of a screen reader twice -- once as the hidden copy of the sign, and
+  again as the label on its link. The link carries them now and the hidden
+  copy steps aside; take the `href` away and the copy takes them back.
+- Customizer: an accessibility pass. Pressing **Hide** used to drop the focus
+  on the document, so the next Tab started again from the top of the page --
+  it now hands over to **Bring them back**, and back again. The sliders read
+  out the raw number where the page showed a formatted one, saying "0.42"
+  for an arm length shown as "42%". Loading a preset swaps a dozen controls
+  and said nothing at all, and nor did moving the dancer with the arrow keys,
+  which is the one thing its own label tells you to do; both report now, the
+  arrows once a run of presses has finished. The four panels are landmarks a
+  reader can jump between rather than anonymous boxes.
+
 ## v3.0.0 — 2026-11-26
 
 - **Breaking: the crowd is gone.** `count` and `variety` are no longer

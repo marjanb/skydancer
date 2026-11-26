@@ -613,13 +613,18 @@
       leadsTo.href = href;
     }
 
-    // the words on the sign are what the link is pointing at, when there are
-    // any; written only when they change, like the hidden copy of them
+    // What the link is currently called: the sign's words when there are any,
+    // the page's own `link-label` or the English fallback when there are not,
+    // and nothing at all when the dancer leads nowhere. Written only when it
+    // changes, and read by announce() below, which will not repeat it.
     let labelled = null;
 
     function labelLink(sign) {
+      // Nothing is labelled when there is nowhere to go, and saying so matters:
+      // announce() below asks what the link is carrying before it repeats it.
+      if (!aimed) { labelled = ''; return; }
       const label = sign || cfg.linkLabel.trim() || 'Find out more';
-      if (!aimed || label === labelled) return;
+      if (label === labelled) return;
       labelled = label;
       leadsTo.textContent = label;
     }
@@ -840,11 +845,15 @@
 
     // The words only reach the DOM when they change: this runs every frame.
     let announced = null;
+    // The sign's words, said once. A dancer that leads somewhere labels its
+    // link with the same words, and a reader should not meet the phrase twice
+    // over -- so when the link is already carrying it, this stays empty.
     function announce(text) {
-      if (text === announced) return;
-      announced = text;
-      saidText.textContent = text;
-      saidText.hidden = !text;
+      const words = labelled === text ? '' : text;
+      if (words === announced) return;
+      announced = words;
+      saidText.textContent = words;
+      saidText.hidden = !words;
     }
 
     function updateWind(t, dt, since = dt) {
@@ -1733,9 +1742,9 @@
         drawBubble(drift, head, girth, sign);
       }
       // what the canvas just painted, said again for anything that can't see it
-      announce(sign);
       aimLink();
       labelLink(sign);
+      announce(sign);
       offerPoke();
       // last of all, so a blurted word lands over everything else
       drawShouts(girth);

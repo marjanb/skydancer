@@ -51,6 +51,7 @@ dancer.addEventListener('pointerdown', e => {
 // what the share link carries -- so it cannot be the only way to move it.
 // The arrows do the same job a nudge at a time, shift for the fine one.
 const NUDGE = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+let moved;   // the timer that waits for a run of arrow presses to finish
 dancer.tabIndex = 0;
 // A group rather than an image: the widget keeps its own live region and its
 // poke button inside, and role="img" would hide both from a reader.
@@ -65,6 +66,11 @@ dancer.addEventListener('keydown', e => {
   spot.y += way[1] * by;
   placeDancer();
   save();   // a run of presses files as one step, the way a drag does
+  // Where it ends up is part of what the share link carries, so it is worth
+  // knowing. Once the keys stop rather than on each one, or a run of presses
+  // would be read out a dozen times over.
+  clearTimeout(moved);
+  moved = setTimeout(() => say(`Dancer at x ${spot.x}, y ${spot.y}`), 500);
 });
 
 addEventListener('resize', placeDancer);
@@ -79,9 +85,15 @@ dancerSize.addEventListener('input', () => {
 const stageHint = document.getElementById('stage-hint');
 
 function showStageBar(visible) {
+  // The button being taken away may be the one under the reader's hand, and a
+  // focused element that goes hidden drops the focus on the document: the next
+  // Tab starts again from the top of the page. Hand it to the button that is
+  // taking its place instead.
+  const handOver = document.activeElement === (visible ? restore : hideButton);
   hideButton.hidden = !visible;
   stageHint.hidden = !visible;
   restore.hidden = visible;
+  if (handOver) (visible ? hideButton : restore).focus();
 }
 
 // hide() and show() are the widget's API; the stage stays put either way
@@ -298,6 +310,18 @@ const DEFAULTS = document.createElement('sky-dancer').cfg;
 const escapeHtml = s => s.replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
 const escapeAttr = s => escapeHtml(String(s)).replace(/"/g, '&quot;');
 const said = document.getElementById('said');
+
+// What just happened, for a reader who cannot see it happen. Each message
+// takes the place of the one before it and of anything still waiting to be
+// said -- a dancer nudged and then a preset loaded should report the preset,
+// not the position the arrows were still settling on.
+let hush;
+function say(text) {
+  clearTimeout(hush);
+  clearTimeout(moved);
+  said.textContent = text;
+  if (text) hush = setTimeout(() => { said.textContent = ''; }, 1600);
+}
 const copyScript = document.getElementById('copy-script');
 const copyTag = document.getElementById('copy-tag');
 
@@ -308,7 +332,12 @@ const FORMATS = { height: pct, 'arm-length': pct, girth: String };
 function apply(el) {
   dancer.setAttribute(el.dataset.key, String(readInput(el)));
   const readout = el.closest('label').querySelector('output');
-  if (readout) readout.value = (FORMATS[el.dataset.key] || (v => `${v.toFixed(2)}×`))(readInput(el));
+  if (readout) {
+    readout.value = (FORMATS[el.dataset.key] || (v => `${v.toFixed(2)}×`))(readInput(el));
+    // A slider should read out the words it shows. Left alone, these report
+    // the raw value, so arm length said "0.42" where the page said "42%".
+    if (el.type === 'range') el.setAttribute('aria-valuetext', readout.value);
+  }
   // don't yank the text out from under someone mid-type
   const hexField = el.closest('.swatch')?.querySelector('.hex');
   if (hexField && document.activeElement !== hexField) hexField.value = el.value.toUpperCase();
@@ -335,14 +364,14 @@ function wireCopy(button, field, label) {
       button.textContent = 'Copied!';
       // A button renaming itself is not reliably read out, and this one has
       // the focus when it happens, so the news is said separately.
-      said.textContent = `${button.closest('.field').querySelector('.head span').firstChild.textContent.trim()} copied`;
+      say(`${button.closest('.field').querySelector('.head span').firstChild.textContent.trim()} copied`);
     } catch {
       // clipboard can be blocked (e.g. some file:// setups); leave it selected for Ctrl/Cmd+C
       field.select();
       button.textContent = 'Press Ctrl/Cmd+C';
-      said.textContent = 'Could not copy; press Ctrl or Cmd + C';
+      say('Could not copy; press Ctrl or Cmd + C');
     }
-    setTimeout(() => { button.textContent = label; said.textContent = ''; }, 1500);
+    setTimeout(() => { button.textContent = label; }, 1500);
   });
 }
 
@@ -491,6 +520,7 @@ for (const chip of document.querySelectorAll('[data-preset]')) {
     // are carried across rather than reset with everything else.
     putBack({ ...PRESETS[chip.dataset.preset], size: dancerSize.value, spot: { ...spot } });
     save();
+    say(`${chip.textContent.trim()} loaded`);
   });
 }
 
