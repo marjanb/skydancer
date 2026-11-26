@@ -1,6 +1,6 @@
 // <sky-dancer> — an embeddable skydancer widget. Drop into any page with:
 //
-//   <script src="https://cdn.jsdelivr.net/gh/marjanb/skydancer@2/skydancer.min.js"></script>
+//   <script src="https://cdn.jsdelivr.net/gh/marjanb/skydancer@3/skydancer.min.js"></script>
 //   <sky-dancer color="#ff3b30" accent="#ffd60a" face="cool" style="height: 500px"></sky-dancer>
 //
 // Every attribute is optional (defaults below). The widget crops to the dancer:
@@ -24,8 +24,6 @@
     face: 'happy',    // happy | surprised | cool | wink | joy | sleepy | angry
     hair: true,
     worn: false,      // one that has been out in the weather a season too long
-    count: 1,         // how many dancers stand together
-    variety: false,   // give a crowd a colour and a face each, instead of one look
     paused: false,    // hold the pose; the dancer stays on show, it just stops
     pattern: 'none',  // markings: none | rings | spiral | dots | chevrons
     glow: 'none',     // lit from inside: none | on
@@ -101,9 +99,8 @@
   // will measure itself against, in girths. Between them they keep a very fat
   // tube from losing its arms. The slimness bites whenever an arm is short for
   // the tube it hangs off: at the default `arm-length` that means a girth past
-  // about 160, or about 130 in a crowd where one of them is a third fatter
-  // than the rest, both of which are past anything the customizer offers -- but
-  // a small `arm-length` is a short arm at any girth, and is slimmed to match.
+  // about 160, which is half again the customizer's own top of 110 -- but a
+  // small `arm-length` is a short arm at any girth, and is slimmed to match.
   const ARM_SLIM = 3.6;
   const ARM_BODY = 3.6;
   // Everything is drawn in units of a REF_HEIGHT-tall widget and scaled to the
@@ -112,18 +109,7 @@
   // Width per unit of height: the dancer's own span, measured at the wildest
   // wind, so the embed is a box around it rather than the whole page width.
   const CROP_RATIO = 1.4;  // measured: the widest gust reaches 0.663 of the height either side
-  const MAX_COUNT = 6;
-  // gap between dancers, in widget heights: they stand shoulder to shoulder,
-  // so a crowd clusters instead of each one claiming a full box
-  const SPACING = 0.55;
-  // a crowd looks like a crowd when they aren't all the same size
-  const SIZES = [1, 0.84, 0.94, 0.8, 0.9, 0.87];
-  // How far a dancer is carried by a neighbour's fullest throw, per segment,
-  // and how long the air takes to cross the gap between them.
-  const NUDGE = 0.008;
-  const AIR_LAG = 0.25;    // seconds
   const SHOULDER = 0.66;   // up the body, where the arms hang off
-  const FLAIL_FULL = 0.085;  // the two sines below at their fullest
 
   // A hand-drawn speech balloon's silhouette: the oval sits up and to one
   // side, its tail trailing down to the tip at (tipX, tipY) below.
@@ -275,7 +261,6 @@
     sleepy:    { eyes: 'shut',   mouth: 'small' },
     angry:     { eyes: 'brows',  mouth: 'frown' },
   };
-  const FACES = Object.keys(LOOKS);
 
   // Words divided by a pipe are several phrases; a doubled pipe is a literal
   // one. The sign works through them in turn, a poke picks one at a time.
@@ -287,19 +272,6 @@
       .filter(Boolean);
   }
 
-  // What a varied crowd differs by, beyond its turn round the hue wheel. The
-  // first line is all ones, so the first dancer is exactly what the page asked
-  // for and the rest fan out from it.
-  const VARIETY = [
-    { girth: 1,    arms: 1,    flail: 1,    hair: true  },
-    { girth: 1.24, arms: 0.78, flail: 0.84, hair: true  },
-    { girth: 0.82, arms: 1.26, flail: 1.2,  hair: false },
-    { girth: 1.12, arms: 0.9,  flail: 1.06, hair: true  },
-    { girth: 0.88, arms: 1.14, flail: 0.9,  hair: false },
-    { girth: 1.3,  arms: 1.04, flail: 1.22, hair: true  },
-  ];
-  const FATTEST = Math.max(...VARIETY.map(v => v.girth));
-  const spinCache = new Map();
   const wornCache = new Map();
 
   // What a season in the sun does to one: the colour goes before the cloth
@@ -330,20 +302,6 @@
     { u: 0.34, turn: 0.52, long: 0.055 },
     { u: 0.66, turn: -0.38, long: 0.042 },
   ];
-
-  // the same colour walked round the wheel, for telling a crowd apart
-  function spin(css, deg) {
-    if (!deg) return css;
-    const key = `${css}|${deg}`;
-    let out = spinCache.get(key);
-    if (!out) {
-      const { h, s, l } = hsl(css);
-      out = `hsl(${(h + deg) % 360} ${s}% ${l}%)`;
-      if (spinCache.size > 64) spinCache.clear();
-      spinCache.set(key, out);
-    }
-    return out;
-  }
 
   // the two inks a tube of this colour is lit and shaded with
   function inks(css) {
@@ -389,7 +347,7 @@
       position: relative;   /* the words and the link hang off this */
       vertical-align: middle;
       height: 400px;
-      aspect-ratio: calc(${CROP_RATIO} + (var(--count, 1) - 1) * ${SPACING});
+      aspect-ratio: ${CROP_RATIO};
     }
     :host([hidden]) { display: none; }
     canvas {
@@ -511,14 +469,8 @@
     // running angle (0 = straight up, positive = leaning right), so travelling
     // sine waves in the bend read as air rippling up the tube.
 
-    const count = () => Math.max(1, Math.min(MAX_COUNT, Math.round(cfg.count) || 1));
-
-    // the thickest tube on stage, as a multiple of the configured girth: the
-    // room left for a fan and the margin a tube is held inside both key off it
-    const fattest = () => (cfg.variety && count() > 1 ? FATTEST : 1);
-
     // height of the strip below the fan's base line: the ground, or just enough to show the whole fan
-    const ground = () => Math.ceil(cfg.girth * fattest() * 0.25);
+    const ground = () => Math.ceil(cfg.girth * 0.25);
 
     // The tube is held inside the canvas the way the ground already holds its
     // feet: a wild gust presses it against the edge instead of running past it,
@@ -531,16 +483,13 @@
       // the outline is drawn 3 past the colour on either side, so it is the
       // one with the ground to clear
       const floor = H - ground() - width / 2 - 3;
-      const edge = cfg.girth * fattest() * 0.62 + 8;  // half the tube, plus its outline
-      // The lid takes no allowance for the fattest tube. The tallest dancer's
-      // head already sits just under it, and widening it there would press the
-      // crown down onto the hair instead of letting it stand up.
-      const lid = cfg.girth * 0.62 + 8;
+      // half the tube, plus its outline, at both the sides and the top
+      const margin = cfg.girth * 0.62 + 8;
       const pts = [{ x, y, a }];
       for (let i = 1; i <= n; i++) {
         a += bend(i / n, a);
-        x = Math.min(W - edge, Math.max(edge, x + Math.sin(a) * segLen));
-        y = Math.min(floor, Math.max(lid, y - Math.cos(a) * segLen));
+        x = Math.min(W - margin, Math.max(margin, x + Math.sin(a) * segLen));
+        y = Math.min(floor, Math.max(margin, y - Math.cos(a) * segLen));
         pts.push({ x, y, a });
       }
       return pts;
@@ -560,9 +509,8 @@
     // Once in a long while it stops flailing and takes a bow: the tube folds
     // from the bottom, holds for a beat, and springs back past upright before
     // settling. Minutes apart, so it reads as a surprise rather than a tic.
-    // On the dance clock like everything else, so `speed` carries it, a held
-    // pose never reaches one, and in a crowd they go one after another --
-    // each dancer is a few seconds further along the same clock.
+    // On the dance clock like everything else, so `speed` carries it and a
+    // held pose never reaches one.
     let bow = { start: POSE + 30 + Math.random() * 40, dur: 2.4, dir: 1 };
 
     function scheduleBow(t) {
@@ -758,6 +706,7 @@
     const GRAB_REACH = 0.32;  // a drag of this much of the height is all the pull there is
     const GRAB_BEND = 0.07;   // radians a segment bends at full pull
     const SPRING = 1.1;       // seconds the ring takes to die away once it is let go
+    const GRAB_SIDEWAYS = 330;   // how far to the side of the tube a hand still reaches
     let press = null;         // { id, x0, y0, x, u, pull, holding } while a pointer is down
     let spring = null;        // { x, u, from, start } once it has been let go
     let dragged = false;      // that release was a drag, so the click after it is not one
@@ -822,9 +771,9 @@
       return s.from * Math.cos(p * Math.PI * 2.2) * (1 - p) ** 2;
     }
 
-    // The pull is strongest where the hand is and dies away along the tube,
-    // so it folds around the hand rather than leaning as one piece -- and
-    // away along the row as well, so a crowd does not all bend to one hand.
+    // The pull is strongest where the hand is and dies away along the tube, so
+    // it folds around the hand rather than leaning as one piece, and dies away
+    // sideways too, so a hand put down well to one side barely reaches it.
     function grabBend(u, x) {
       const hand = press?.holding ? press : null;
       const pull = hand ? hand.pull : spring ? springBack(spring) : 0;
@@ -832,7 +781,7 @@
       const at = hand ?? spring;
       return pull * GRAB_BEND
         * Math.exp(-(((u - at.u) / 0.3) ** 2))
-        * Math.exp(-(((x - at.x) / (SPACING * H * 0.6)) ** 2));
+        * Math.exp(-(((x - at.x) / GRAB_SIDEWAYS) ** 2));
     }
 
     // Only offered when a poke has something to say, and when a poke would do
@@ -1003,12 +952,10 @@
       landed();
     }
 
-    // Two sines that never quite line up, which is the whole of the dance:
-    // -1 to 1, before it is weighted towards the top of the tube. Read off
-    // the body chain and again at the shoulder, where a neighbour feels it.
+    // Two sines that never quite line up, which is the whole of the dance.
     function flail(u, t) {
-      return (0.05 * Math.sin(t * 2.1 - u * 5)
-            + 0.035 * Math.sin(t * 3.7 - u * 9 + 1.3)) / FLAIL_FULL;
+      return 0.05 * Math.sin(t * 2.1 - u * 5)
+           + 0.035 * Math.sin(t * 3.7 - u * 9 + 1.3);
     }
 
     // bend that swings a loose chain (arm, hair) round to point downwind
@@ -1027,61 +974,32 @@
         };
       }
 
-      const n = count();
-      const gap = SPACING * H;
-      // Left to right, because each one is handed what the one before it was
-      // doing a moment ago: a flail travels along a row rather than each
-      // dancer keeping to itself, which is the difference between a row and
-      // six copies.
-      const row = [];
-      let nudge = 0;
-      for (let i = 0; i < n; i++) {
-        const look = lookOf(i, n);
-        const x = W / 2 + (i - (n - 1) / 2) * gap;
-        const one = dancerAt(t + i * 3.7, x, SIZES[i % SIZES.length], look, nudge);
-        row.push({ ...one, look });
-        nudge = one.swing;
-      }
-      // smallest first, so they read as standing further back
-      return row.sort((a, b) => a.girth - b.girth);
+      return dancer(t, lookNow());
     }
 
-    // One crowd, one palette: the colours the page chose stay on the first
-    // dancer and the rest are walked evenly round the wheel, so a line-up
-    // reads as a set rather than as several unrelated widgets. Faces rotate
-    // from the chosen one for the same reason.
-    function lookOf(i, n) {
+    // What it is wearing this frame: the page's own colours, or whatever a
+    // theme resolved them to, weathered when `worn` is on.
+    function lookNow() {
       const worn = cfg.worn;
-      const base = worn ? weathered(themed.color ?? cfg.color) : themed.color ?? cfg.color;
-      const accent = worn ? weathered(themed.accent ?? cfg.accent) : themed.accent ?? cfg.accent;
-      const plain = { color: base, accent, face: cfg.face,
-                      girth: 1, arms: 1, flail: 1, hair: cfg.hair };
-      if (!cfg.variety || n < 2) return plain;
-      const mix = VARIETY[i % VARIETY.length];
-      const turn = i * 360 / n;
-      const first = Math.max(0, FACES.indexOf(cfg.face));
+      const color = themed.color ?? cfg.color;
+      const accent = themed.accent ?? cfg.accent;
       return {
-        color: spin(base, turn),
-        accent: spin(accent, turn),
-        face: FACES[(first + i) % FACES.length],
-        girth: mix.girth,
-        arms: mix.arms,
-        flail: mix.flail,
-        // a page that asked for no hair gets none, however mixed the crowd
-        hair: cfg.hair && mix.hair,
+        color: worn ? weathered(color) : color,
+        accent: worn ? weathered(accent) : accent,
+        face: cfg.face,
+        hair: cfg.hair,
       };
     }
 
-    // one dancer, `k` times the configured size, standing at x. `nudge` is
-    // how hard the one on its left is throwing its arm this way.
-    function dancerAt(t, x, k, look, nudge = 0) {
+    // the dancer, standing in the middle of its box
+    function dancer(t, look) {
       // a sagging dancer loses some of its snap
       const limp = 0.55 + 0.45 * lift;
-      const w = cfg.wildness * (1 + punch * 2.5) * limp * look.flail;
-      const girth = cfg.girth * look.girth * k;
-      // cap so tall settings in short widgets don't poke out of the top
+      const w = cfg.wildness * (1 + punch * 2.5) * limp;
+      const girth = cfg.girth;
+      const x = W / 2;
       // as tall as the box allows, less room for its rounded head and hair
-      const height = (H - ground() - cfg.girth * look.girth * 1.6) * k * filled;
+      const height = (H - ground() - girth * 1.6) * filled;
       // A sag is a loss of pressure, not of cloth, so it bows the tube over
       // rather than shortening it: the head drops, the fabric stays. Air
       // going in or out is the other thing, and that does change the length.
@@ -1098,9 +1016,8 @@
       // fan. That is also where a tube lying flat rests, so the body stands on
       // its own floor and cannot bend down past its feet.
       const body = chain(x, H - ground() - girth / 2, 0, BODY_SEGS, height / BODY_SEGS, u =>
-        w * flail(u, t) * FLAIL_FULL * (0.3 + u) + kinkBend(u, t) * limp * look.flail
-        + bowBend(u, t) * look.flail + grabBend(u, x) + wind * 0.03 + droop
-        + nudge * NUDGE * (0.3 + u) * look.flail, girth);
+        w * flail(u, t) * (0.3 + u) + kinkBend(u, t) * limp
+        + bowBend(u, t) + grabBend(u, x) + wind * 0.03 + droop, girth);
 
       const shoulder = body[Math.round(BODY_SEGS * SHOULDER)];
       // An arm is a fraction of the body's height, which is the right measure
@@ -1112,8 +1029,7 @@
       // length, since length is what gets it clear of the body. The fraction
       // stays on the outside, so `arm-length="0"` is still no arms at all, and
       // the air still carries it: a flat dancer has no arms out either.
-      const armLen = cfg.armLength * look.arms
-        * Math.max(height, girth * ARM_BODY * filled);
+      const armLen = cfg.armLength * Math.max(height, girth * ARM_BODY * filled);
       const armWidth = Math.min(girth * ARM_WIDE, armLen / ARM_SLIM);
       // No width is no arms, the way no hair is none below: a dancer with the
       // air out of it, or one asked for `arm-length="0"`, has nothing to draw,
@@ -1130,13 +1046,7 @@
         chain(top.x, top.y, top.a + j * 0.3, HAIR_SEGS, girth * 0.14, (v, a) =>
           w * 0.25 * Math.sin(t * 9 - v * 4 + j * 1.7) + 0.5 * blow(a), girth * HAIR_WIDE));
 
-      // What the dancer to its right feels, a beat after it happened, since
-      // the air an arm throws takes a moment to cross the gap. Its flail and
-      // nothing else: a row leaning together in the wind, or one dancer
-      // folded over a reader's hand, is the weather or the reader -- not a
-      // dancer moving its neighbour. Zero when it is not flailing at all.
-      const swing = flail(SHOULDER, t - AIR_LAG) * Math.min(1, w);
-      return { body, arms, hair, girth, armWidth, x, t, swing };
+      return { body, arms, hair, girth, armWidth, x, t, look };
     }
 
     // ---- drawing ----
@@ -1784,7 +1694,7 @@
       ctx.restore();
     }
 
-    function draw(dancers) {
+    function draw(one) {
       ctx.clearRect(0, 0, W, H);
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
@@ -1796,48 +1706,31 @@
       depthShade.addColorStop(0, `rgba(0,0,0,${GROUNDED})`);
       depthShade.addColorStop(1, 'rgba(0,0,0,0)');
 
-      // Every halo before any dancer, not one each as they are drawn: the
-      // light is behind all of them, and a fat one in front would otherwise
-      // wash out the body of the one standing behind it.
-      if (lit()) {
-        for (const { body, arms, hair, girth, armWidth, look } of dancers) {
-          glowAround(body, arms, hair, girth, armWidth, look);
-        }
-      }
-      for (const { body, arms, hair, girth, armWidth, x, t, look } of dancers) {
-        for (const strand of hair) strokeChain(strand, girth * HAIR_WIDE + 4, OUTLINE);
-        for (const strand of hair) strokeChain(strand, girth * HAIR_WIDE, look.accent);
-        if (cfg.worn) for (const arm of arms) drawFray(arm, armWidth, look.accent);
-        for (const arm of arms) drawTube(arm, armWidth, look.accent);
-        drawTube(body, girth, look.color, FLAT, cfg.pattern, look.accent,
-                 String(cfg.print ?? '').trim(), cfg.worn);
-        // the last drawn is the front-most, since they are sorted by girth
-        lastChest = body[Math.round(BODY_SEGS * 0.55)];   // for blurted words
-        drawFace(body[Math.round(BODY_SEGS * 0.87)], girth, t, look.face);
-        drawFan(x, girth);
-      }
+      // the light is behind it, so the halo goes down before the dancer does
+      const { body, arms, hair, girth, armWidth, x, t, look } = one;
+      if (lit()) glowAround(body, arms, hair, girth, armWidth, look);
+      for (const strand of hair) strokeChain(strand, girth * HAIR_WIDE + 4, OUTLINE);
+      for (const strand of hair) strokeChain(strand, girth * HAIR_WIDE, look.accent);
+      if (cfg.worn) for (const arm of arms) drawFray(arm, armWidth, look.accent);
+      for (const arm of arms) drawTube(arm, armWidth, look.accent);
+      drawTube(body, girth, look.color, FLAT, cfg.pattern, look.accent,
+               String(cfg.print ?? '').trim(), cfg.worn);
+      lastChest = body[Math.round(BODY_SEGS * 0.55)];   // for blurted words
+      drawFace(body[Math.round(BODY_SEGS * 0.87)], girth, t, look.face);
+      drawFan(x, girth);
 
-      // The fattest of them sets the scale for everything drawn over the
-      // group, so the board, the balloon and a blurted word agree.
-      const widest = Math.max(...dancers.map(d => d.girth));
-
-      // one board for the lot of them, in front of their feet
-      drawPlacard(W / 2, widest, String(cfg.placard ?? ''));
+      // a board staked in front of its feet
+      drawPlacard(W / 2, girth, String(cfg.placard ?? ''));
 
       const sign = phraseNow(t);
-      if (sign && dancers.length) {
-        // one balloon for the lot of them, floating over the middle of the group
-        const heads = dancers.map(d => d.body[Math.round(BODY_SEGS * 0.9)]);
-        const mid = {
-          x: heads.reduce((sum, h) => sum + h.x, 0) / heads.length,
-          y: heads.reduce((sum, h) => sum + h.y, 0) / heads.length,
-        };
-        if (!drift) drift = { x: mid.x, y: mid.y };
+      if (sign) {
+        const head = body[Math.round(BODY_SEGS * 0.9)];
+        if (!drift) drift = { x: head.x, y: head.y };
         // ~1.5s to catch up: a drift, not a chase. A still pose has no loop to ease with.
         const ease = held() ? 1 : Math.max(0, Math.min(1, frameDt * 0.7));
-        drift.x += (mid.x - drift.x) * ease;
-        drift.y += (mid.y - drift.y) * ease;
-        drawBubble(drift, mid, widest, sign);
+        drift.x += (head.x - drift.x) * ease;
+        drift.y += (head.y - drift.y) * ease;
+        drawBubble(drift, head, girth, sign);
       }
       // what the canvas just painted, said again for anything that can't see it
       announce(sign);
@@ -1845,7 +1738,7 @@
       labelLink(sign);
       offerPoke();
       // last of all, so a blurted word lands over everything else
-      drawShouts(widest);
+      drawShouts(girth);
     }
 
     // ---- loop ----
@@ -2039,18 +1932,12 @@
     attributeChangedCallback(name, _old, value) {
       const key = KEYS.find(k => attrName(k) === name);
       this.cfg[key] = parse(key, value);
-      if (key === 'count' && this.isConnected) this.syncCount();
       // reading the theme forces a style recalc, and only these two can change
       // what it resolves to
       if (key === 'color' || key === 'accent') this.anim?.rereadTheme();
       if (key === 'paused') this.anim?.hold();
       if (key === 'hours') this.keepHours();
       this.anim?.redraw();
-    }
-
-    // the host grows sideways with the crowd; a constructor may not touch attributes
-    syncCount() {
-      this.style.setProperty('--count', Math.max(1, Math.min(MAX_COUNT, Math.round(this.cfg.count) || 1)));
     }
 
     // the page decides when a dancer is on show
@@ -2096,7 +1983,6 @@
     }
 
     connectedCallback() {
-      this.syncCount();
       this.anim = animate(this.canvas, this.cfg);
       this.keepHours();
     }

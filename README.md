@@ -9,7 +9,7 @@ An animated inflatable tube man as an embeddable web widget. It is transparent, 
 ## Embed
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/marjanb/skydancer@2/skydancer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/marjanb/skydancer@3/skydancer.min.js"></script>
 <sky-dancer color="#7d3cff" accent="#00e0c6" face="cool" style="height: 500px"></sky-dancer>
 ```
 
@@ -64,8 +64,6 @@ The widget is 400px tall by default and crops to the dancer: its width follows i
 | `glow`       | `none`    | `on` lights it from inside                 |
 | `hair`       | `true`    | `false` hides the hair                     |
 | `worn`       | `false`   | `true` for one that has been out in the weather: colours bleached, tape over a tear, frayed arm ends |
-| `count`      | `1`       | how many dancers stand together (max 6); a hard flail carries to the next one along |
-| `variety`    | `false`   | `true` gives each dancer in a crowd its own colour, face, girth, arms and hair |
 | `paused`     | `false`   | `true` holds the pose; the dancer stays on show, it just stops |
 | `sign`       | none      | words in a speech bubble; divide several with `\|` and it works through them, 4s each. `\|\|` is a literal pipe |
 | `print`      | none      | words printed down the body, bending with the tube |
@@ -155,8 +153,8 @@ nothing to fill and it fires straight away.
 
 Poking a dancer knocks the air out of it. Dragging across one takes hold of
 the tube: it folds over towards the hand on it and springs back when it is
-let go, hardest where it was grabbed and dying away along the body, so a
-crowd does not all bend to one hand. A press that stays put is a poke and a
+let go, hardest where it was grabbed and dying away along the body and away
+to either side of it. A press that stays put is a poke and a
 press that travels is a hold, which is why a poke lands on the release rather
 than the press -- and why a drag that happens to end on a dancer with an
 `href` does not follow it. Scrolling and zooming stay the reader's: a touch

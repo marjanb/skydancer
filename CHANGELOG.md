@@ -1,11 +1,21 @@
 # Changelog
 
-Embeds point at `@2`, which follows the newest `v2.x.x` tag, so everything
+Embeds point at `@3`, which follows the newest `v3.x.x` tag, so everything
 below reaches an existing embed as soon as it is tagged. This is the place to
-look when a dancer starts looking different.
+look when a dancer starts looking different. An embed still on `@2` stays on
+the last `v2.x.x` tag and goes on working, crowd and all; it simply stops
+getting anything new.
 
 ## Unreleased
 
+- **Breaking: the crowd is gone.** `count` and `variety` are no longer
+  attributes, and a `<sky-dancer>` is one dancer. A tag that still carries
+  either is not an error -- the words are simply ignored, and one dancer
+  stands where a row used to -- but an embed that wanted a row should stay
+  on `@2`, which keeps working. Out with them go the varied palette, the
+  hue spin that told a row apart, the flail that travelled along it, and
+  the widening the host did to make room; the customizer no longer offers
+  either. A lone dancer is pixel for pixel what it was.
 - **Fixed:** a very fat dancer had no arms. An arm is a fraction of the body's
   height, and the head alone wants 1.6 girths off the top of the box, so there
   was almost nothing left to take a fraction of: at `girth="400"` an arm came

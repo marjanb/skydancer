@@ -239,22 +239,6 @@ h1, h2, button, .mark { font-family: Fredoka, Nunito, system-ui, sans-serif; }
 
 .field { display: flex; flex-direction: column; gap: 7px; }
 
-/* The crowd size and the switch that mixes it up are one setting in two
-   parts -- the switch does nothing until there is more than one dancer -- so
-   they are boxed together rather than left to read as unrelated. */
-/* its own display would otherwise outrank the browser's rule for [hidden] */
-.group[hidden] { display: none; }
-
-.group {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  background: color-mix(in srgb, var(--tint) 7%, transparent);
-  border: 1.5px solid color-mix(in srgb, var(--tint) 20%, transparent);
-  border-radius: var(--r);
-}
-
 .head {
   display: flex;
   align-items: center;
@@ -499,10 +483,6 @@ a.ghost svg { width: 15px; height: 15px; flex: none; }
 }
 .toggle input:checked { background: var(--accent); }
 .toggle input:checked::after { transform: translateX(19px); }
-
-/* a lone dancer has nothing to differ from, so the switch sits this one out */
-.toggle.off { opacity: 0.45; }
-.toggle.off input { cursor: not-allowed; }
 
 /* ---- buttons ---- */
 

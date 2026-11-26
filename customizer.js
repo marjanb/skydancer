@@ -194,7 +194,6 @@ function putBack(state) {
   // after the controls, never before: the spot is clamped against the dancer's
   // size, so measuring it first would clamp against the size being replaced
   placeDancer();
-  syncVariety();
 }
 
 // Stepping either way is the same move: take a state off one stack, put the
@@ -278,8 +277,8 @@ function writeInput(el, value) {
   else el.value = value;
 }
 
-// @2 follows the newest v2.x.x tag; jsDelivr generates the .min.js on the fly
-const CDN_URL = 'https://cdn.jsdelivr.net/gh/marjanb/skydancer@2/skydancer.min.js';
+// @3 follows the newest v3.x.x tag; jsDelivr generates the .min.js on the fly
+const CDN_URL = 'https://cdn.jsdelivr.net/gh/marjanb/skydancer@3/skydancer.min.js';
 // The same widget arrives two ways, and the tag underneath is the same
 // either way. One box holds one thing to copy, so the install that goes with
 // the import is said in the hint rather than pasted in with it.
@@ -304,21 +303,10 @@ const copyTag = document.getElementById('copy-tag');
 
 // readout next to each slider
 const pct = v => `${Math.round(v * 100)}%`;
-const FORMATS = { height: pct, 'arm-length': pct, girth: String, count: String };
-
-// a lone dancer has nothing to differ from, so the toggle is only live
-// once there is a crowd
-const variety = document.querySelector('[data-key="variety"]');
-const countInput = document.querySelector('[data-key="count"]');
-
-function syncVariety() {
-  variety.disabled = +countInput.value < 2;
-  variety.closest('label').classList.toggle('off', variety.disabled);
-}
+const FORMATS = { height: pct, 'arm-length': pct, girth: String };
 
 function apply(el) {
   dancer.setAttribute(el.dataset.key, String(readInput(el)));
-  if (el === countInput) syncVariety();
   const readout = el.closest('label').querySelector('output');
   if (readout) readout.value = (FORMATS[el.dataset.key] || (v => `${v.toFixed(2)}×`))(readInput(el));
   // don't yank the text out from under someone mid-type
@@ -327,12 +315,11 @@ function apply(el) {
   if (el.type === 'range') el.style.setProperty('--fill', `${(el.value - el.min) / (el.max - el.min) * 100}%`);
   const attrs = inputs
     // leave out anything already at the widget's own default
-    .filter(input => !(input.dataset.key === 'count' && +input.value === 1))
     .filter(input => !(input.dataset.key === 'sign' && !input.value.trim()))
     .filter(input => !(input.dataset.key === 'href' && !input.value.trim()))
     .filter(input => !(['print', 'placard', 'shout', 'hours'].includes(input.dataset.key)
                        && !input.value.trim()))
-    .filter(input => !(['variety', 'worn'].includes(input.dataset.key) && !input.checked))
+    .filter(input => !(input.dataset.key === 'worn' && !input.checked))
     .map(input => `${input.dataset.key}="${escapeAttr(readInput(input))}"`).join(' ');
   showSource();
   // don't rewrite the box someone is typing or pasting into
@@ -388,7 +375,7 @@ placeDancer();
 for (const el of inputs) {
   const key = el.dataset.key;
   const fallback = DEFAULTS[cfgKey(key)];
-  const stored = shelved(el) || !(key in saved) ? fallback : saved[key];
+  const stored = key in saved ? saved[key] : fallback;
   // A link can carry anything at all. A value the control can't hold would
   // land on a clamped slider, an empty select or a black colour and then be
   // saved as if it had been chosen, so it goes back to the default instead.
@@ -397,7 +384,6 @@ for (const el of inputs) {
   apply(el);
   el.addEventListener('input', () => { apply(el); save(); });
 }
-syncVariety();
 writeShareLink();
 before = JSON.stringify(snapshot());   // where the first undo should land
 
@@ -414,11 +400,6 @@ function linkable(text) {
     return false;
   }
 }
-
-// A control that has been put away takes its default and nothing else: a
-// value saved, shared or randomised into it could not be undone by hand.
-// Declared, not assigned, because the restore loop above runs before this.
-function shelved(el) { return !!el.closest('[hidden]'); }
 
 function usable(el, value) {
   if (value === null || value === undefined) return false;
@@ -475,7 +456,6 @@ document.getElementById('reset').addEventListener('click', () => {
     writeInput(el, DEFAULTS[cfgKey(el.dataset.key)]);
     apply(el);              // the first of these carries the height too
   }
-  syncVariety();
   save();
 });
 
@@ -516,16 +496,12 @@ for (const chip of document.querySelectorAll('[data-preset]')) {
 
 document.getElementById('randomize').addEventListener('click', () => {
   for (const el of inputs) {
-    // count comes before variety in the DOM, so its apply() has already
-    // settled whether the toggle is live by the time we get here. Only that
-    // one is ever disabled, so only that one is held back.
-    if (shelved(el)) continue;   // out of sight, so leave it at its default
     if (el.type === 'checkbox') {
       // Worn is a state, not a coin toss: at the same odds as the rest, most
       // of what Surprise me handed out would be bleached and taped, and the
       // look would stop meaning anything.
       const odds = el.dataset.key === 'worn' ? 0.2 : 0.7;
-      el.checked = Math.random() < odds && !(el === variety && variety.disabled);
+      el.checked = Math.random() < odds;
     }
     else if (el.type === 'range') el.value = +el.min + Math.random() * (el.max - el.min);
     else if (el.type === 'color') el.value = `#${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, '0')}`;
