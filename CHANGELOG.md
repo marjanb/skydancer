@@ -6,7 +6,7 @@ look when a dancer starts looking different. An embed still on `@2` stays on
 the last `v2.x.x` tag and goes on working, crowd and all; it simply stops
 getting anything new.
 
-## Unreleased
+## v3.0.0 — 2026-11-26
 
 - **Breaking: the crowd is gone.** `count` and `variety` are no longer
   attributes, and a `<sky-dancer>` is one dancer. A tag that still carries
