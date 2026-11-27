@@ -171,6 +171,17 @@
   const springy = x => 1 + 2.7 * (x - 1) ** 3 + 1.7 * (x - 1) ** 2;
   const OUTLINE = '#1a1a2e';
 
+  // The two sizes that do not scale with the widget. Everything else here is
+  // drawn against a 1000-unit-tall dancer, which is honest for a shape -- one
+  // half as tall is half as wide -- and wrong for the two things a reader
+  // meets rather than looks at: ink that has to be seen as a line, and words
+  // that have to be read. In a 150px embed the outline came out a third of a
+  // real pixel and the placard said its piece at 5, so a small dancer lost
+  // its drawn look and its voice at once. Both get a floor in real pixels,
+  // which is where legibility actually lives.
+  const HAIRLINE = 1;    // real px: thinner than this and a line greys out
+  const LEGIBLE = 11;    // real px: smaller than this and words are texture
+
   // Printed words get a hand-lettered face rather than the interface one: it
   // is a sign painted on cloth, not a label. All of these ship with an OS, so
   // an embed pulls nothing down. It ends on `sans-serif` rather than
@@ -436,11 +447,30 @@
     // ---- canvas sizing ----
 
     let W = 0, H = 0;
+    let unit = 0;   // real px per drawing unit; 0 until the canvas is laid out
+
+    // `px` real pixels, in drawing units. Before the canvas has been laid
+    // out there is no answer, so it gives back the drawing's own number and
+    // every floor below comes out exactly where it was.
+    const real = px => px / (unit || 1);
+    // The width of a line that has to read as a line: the band of outline
+    // around a tube, or the stroke on a board, at the thickness the drawing
+    // asks for or a hairline, whichever is more. Not `ink`: that is already
+    // the name of the colour a tube's markings are printed in.
+    const edge = (base = 3) => Math.max(base, real(HAIRLINE));
+    // A size for words: at least legible, since words exist to be read, and
+    // at most twice what the drawing asked for, since past that they have
+    // stopped being the dancer's words and become words with a dancer behind
+    // them. The two meet at about 153px of widget for the board and 172px
+    // for a blurt; below that the cap wins, and the words are bigger than
+    // they were but no longer the full LEGIBLE.
+    const legible = want => Math.min(Math.max(want, real(LEGIBLE)), want * 2);
 
     function resize() {
       const dpr = window.devicePixelRatio || 1;
       const scale = canvas.clientHeight / REF_HEIGHT;
       if (!scale) return;  // not laid out yet
+      unit = scale;
       W = canvas.clientWidth / scale;
       H = REF_HEIGHT;
       lastDpr = dpr;
@@ -553,7 +583,6 @@
     canvas.addEventListener('pointermove', e => {
       const half = canvas.clientWidth / 2;  // offsetX is in CSS px, not drawing units
       pointerWind = Math.max(-1, Math.min(1, (e.offsetX - half) / half));
-      const unit = canvas.clientHeight / REF_HEIGHT;
       gaze = unit ? { x: e.offsetX / unit, y: e.offsetY / unit } : null;
     }, { signal: events.signal });
     // Watched on the widget rather than the canvas: the link lies over the
@@ -724,12 +753,11 @@
       // release. A held pose is held, too: a hand on one changes nothing and
       // a tap on one has nothing to poke.
       if (press || e.button !== 0 || !e.isPrimary || held() || !visible) return;
-      const unit = canvas.clientHeight / REF_HEIGHT || 1;
       press = {
         id: e.pointerId,
         x0: e.offsetX,
         y0: e.offsetY,
-        x: e.offsetX / unit,                                      // which dancer the hand is on
+        x: e.offsetX / (unit || 1),                               // where along the canvas the hand is
         u: Math.max(0.05, Math.min(0.95, 1 - e.offsetY / (canvas.clientHeight || 1))),
         pull: 0,
         holding: false,
@@ -1138,7 +1166,7 @@
         const len = width * (j ? 1.1 : 1.5);
         const end = { x: tip.x + Math.sin(a) * len, y: tip.y - Math.cos(a) * len, a };
         const strand = [tip, end];
-        strokeChain(strand, width * 0.34 + 4, OUTLINE);
+        strokeChain(strand, width * 0.34 + edge(2) * 2, OUTLINE);
         strokeChain(strand, width * 0.34, color);
       }
     }
@@ -1228,13 +1256,13 @@
         // ends overrunning the silhouette.
         ctx.lineCap = 'round';
         ctx.lineWidth = width * 0.16;
-        const edge = width * 0.46;
+        const out = width * 0.46;   // not `edge`: that is the line-width floor
         for (let i = 2; i < n - 2; i += 4) {
           const lo = pts[i], hi = pts[i + 2];
           ctx.beginPath();
-          ctx.moveTo(lo.x - Math.cos(lo.a) * edge, lo.y - Math.sin(lo.a) * edge);
+          ctx.moveTo(lo.x - Math.cos(lo.a) * out, lo.y - Math.sin(lo.a) * out);
           ctx.lineTo(hi.x, hi.y);
-          ctx.lineTo(lo.x + Math.cos(lo.a) * edge, lo.y + Math.sin(lo.a) * edge);
+          ctx.lineTo(lo.x + Math.cos(lo.a) * out, lo.y + Math.sin(lo.a) * out);
           ctx.stroke();
         }
         return;
@@ -1287,7 +1315,7 @@
       // the join. The outline is the wider of the two strokes and reached
       // furthest, so the foot is carried down by its half-width.
       const first = pts[0];
-      const foot = r + 3;
+      const foot = r + edge();
       const stroke = trimming
         ? [{ x: first.x - Math.sin(first.a) * foot,
              y: first.y + Math.cos(first.a) * foot, a: first.a }, ...pts]
@@ -1297,11 +1325,11 @@
       // hand, outline first and fill over it. The far end is the only one that
       // shows -- the near one stands behind the fan.
       if (trimming) ctx.lineCap = 'butt';
-      strokeChain(stroke, width + 6, OUTLINE);
+      strokeChain(stroke, width + edge() * 2, OUTLINE);
       strokeChain(stroke, width, color);
       if (trimming) {
         ctx.lineCap = 'round';
-        fillDome(end, r + 3, r * flat + 3, OUTLINE);
+        fillDome(end, r + edge(), r * flat + edge(), OUTLINE);
         fillDome(end, r, r * flat, color);
       }
 
@@ -1372,7 +1400,7 @@
       ctx.arc(side * g * EYE_X, g * EYE_Y - bulge * r * 0.5, r,
               bulge > 0 ? Math.PI * 1.25 : Math.PI * 0.25,
               bulge > 0 ? Math.PI * 1.75 : Math.PI * 0.75);
-      ctx.lineWidth = g * 0.05;
+      ctx.lineWidth = Math.max(g * 0.05, real(HAIRLINE));
       ctx.strokeStyle = OUTLINE;
       ctx.stroke();
     }
@@ -1422,7 +1450,7 @@
       }
       if (kind === 'brows') {
         // two lines slanting in toward the nose, which is the whole of a scowl
-        ctx.lineWidth = g * 0.055;
+        ctx.lineWidth = Math.max(g * 0.055, real(HAIRLINE));
         ctx.strokeStyle = OUTLINE;
         for (const side of [-1, 1]) {
           ctx.beginPath();
@@ -1436,7 +1464,7 @@
     function drawMouth(g, kind) {
       ctx.fillStyle = OUTLINE;
       ctx.strokeStyle = OUTLINE;
-      ctx.lineWidth = g * 0.05;
+      ctx.lineWidth = Math.max(g * 0.05, real(HAIRLINE));
       ctx.beginPath();
       if (kind === 'gape') {
         ctx.ellipse(0, g * 0.22, g * 0.1, g * 0.14, 0, 0, Math.PI * 2);
@@ -1480,7 +1508,7 @@
         return;
       }
       shouts = shouts.filter(s => wall - s.at < SHOUT_LIFE);
-      const size = Math.max(girth * 0.45, H * 0.032);
+      const size = legible(Math.max(girth * 0.45, H * 0.032));
       ctx.save();
       ctx.font = `800 ${size}px system-ui, -apple-system, sans-serif`;
       ctx.textAlign = 'center';
@@ -1512,11 +1540,13 @@
     function drawPlacard(x, girth, text) {
       const words = text.trim();
       if (!words) return;
-      // Not a floor, despite the look of it: the width cap below shrinks the
-      // size again when there is a lot to say. It is a starting size, and the
-      // second term is what a thin dancer's board is read at -- below a girth
-      // of about 86 it is the one that wins.
-      let size = Math.max(girth * 0.42, H * 0.036);
+      // A starting size, not a final one: the width cap below shrinks it
+      // again when there is a lot to say. The second term is what a thin
+      // dancer's board is read at -- below a girth of about 86 it is the one
+      // that wins -- and legible() is what a small embed's is, since this is
+      // the one place on the canvas words are meant to be read rather than
+      // glanced at.
+      let size = legible(Math.max(girth * 0.42, H * 0.036));
       const face = () => { ctx.font = `700 ${size}px system-ui, -apple-system, sans-serif`; };
       face();
       // narrow enough to stay on the canvas, however much it has to say
@@ -1537,7 +1567,7 @@
       };
 
       ctx.save();
-      ctx.lineWidth = 3;
+      ctx.lineWidth = edge();
       ctx.strokeStyle = OUTLINE;
       ctx.beginPath();
       ctx.moveTo(root.x, root.y);
@@ -1564,7 +1594,7 @@
       const w = g * 1.7, h = g * 0.55;
       ctx.fillStyle = '#3a3f4b';
       ctx.strokeStyle = OUTLINE;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = edge();
       ctx.beginPath();
       ctx.roundRect(x - w / 2, H - ground() - h * 0.6, w, h, 8);
       ctx.fill();
@@ -1585,6 +1615,14 @@
     function drawBubble(at, speakFrom, girth, text) {
       const shape = bubble(cfg.bubble);
 
+      // No floor on this one, unlike the board and the blurt. The balloon is
+      // capped below to a share of the canvas, so a bigger word only buys a
+      // matching shrink and nothing is gained; and lifting the cap to let it
+      // through would need a balloon most of the canvas wide, which is no
+      // longer a dancer with something to say. A sign is readable from about
+      // 220px of widget down, and the words are in the page either way --
+      // they are mirrored into the hidden text a reader, a find and a
+      // translator all reach.
       let size = H * 0.05;
       const fit = () => { ctx.font = `700 ${size}px system-ui, -apple-system, sans-serif`; };
       fit();
@@ -1680,6 +1718,10 @@
       // one even thickness all the way round, tail included
       ctx.fillStyle = '#fffdf6';
       ctx.strokeStyle = OUTLINE;
+      // Not edge(): this is inside the balloon's own scale, where 3.5 is
+      // already a couple of real pixels, and a floor meant for the canvas
+      // frame would blow the outline up into the thick black band the cap
+      // above exists to prevent.
       ctx.lineWidth = 3.5;
       ctx.fill(shape.path);
       ctx.stroke(shape.path);
@@ -1718,7 +1760,7 @@
       // the light is behind it, so the halo goes down before the dancer does
       const { body, arms, hair, girth, armWidth, x, t, look } = one;
       if (lit()) glowAround(body, arms, hair, girth, armWidth, look);
-      for (const strand of hair) strokeChain(strand, girth * HAIR_WIDE + 4, OUTLINE);
+      for (const strand of hair) strokeChain(strand, girth * HAIR_WIDE + edge(2) * 2, OUTLINE);
       for (const strand of hair) strokeChain(strand, girth * HAIR_WIDE, look.accent);
       if (cfg.worn) for (const arm of arms) drawFray(arm, armWidth, look.accent);
       for (const arm of arms) drawTube(arm, armWidth, look.accent);

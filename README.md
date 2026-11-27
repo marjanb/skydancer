@@ -45,7 +45,17 @@ does nothing rather than throwing.
 It is the same file either way: no build step, no dependencies. Types come
 with it, so `querySelector('sky-dancer')` knows what it has found.
 
-The widget is 400px tall by default and crops to the dancer: its width follows its height (1.4x, plus a little per extra dancer), so it sits inline like an image rather than filling the page. Size it with CSS -- set the height and the width follows, or set both to override the crop. The dancer scales with the height and keeps its proportions.
+The widget is 400px tall by default and crops to the dancer: its width follows its height (1.4x), so it sits inline like an image rather than filling the page. Size it with CSS -- set the height and the width follows, or set both to override the crop. The dancer scales with the height and keeps its proportions.
+
+Two things do not scale with it, because they stop working when they do: the
+outline is never thinner than a real pixel, and the words on the placard are
+never smaller than 11 of them -- though never more than twice the size the
+widget asked for either, so below about 150px of height they do shrink again,
+just more slowly. A dancer in a 150px sidebar still looks drawn and its board
+can still be read. A speech bubble is the exception: it is capped to a share
+of the canvas, so there a bigger word only buys a matching shrink and its
+words follow the box all the way down. They are in the page either way, in
+the hidden text a reader and a find both reach.
 
 | Attribute    | Default   | Meaning                                    |
 |--------------|-----------|--------------------------------------------|

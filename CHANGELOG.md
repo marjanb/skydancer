@@ -6,6 +6,25 @@ look when a dancer starts looking different. An embed still on `@2` stays on
 the last `v2.x.x` tag and goes on working, crowd and all; it simply stops
 getting anything new.
 
+## Unreleased
+
+- **Fixed:** a small embed looked washed out and said nothing. Everything is
+  drawn against a 1000-unit-tall dancer, which is honest for a shape and
+  wrong for ink and for words: in a 150px sidebar the outline came out a
+  third of a real pixel and the placard spoke at 5. The outline, the face,
+  the stake and the blower now hold a one-pixel floor, and the placard and
+  the blurted word an 11-pixel one -- but never past twice the size the
+  widget asked for, since a board that outgrows its dancer has stopped being
+  the dancer's board. The two meet at about 153px of widget for the placard
+  and 172px for a blurt; below that the words still shrink, from twice their
+  old size rather than from life size. At 150px the placard went from 5.4
+  real pixels to 10.8. A speech bubble is left alone -- it is capped to a
+  share of the canvas, so a bigger word there only buys a matching shrink,
+  and its words are in the page regardless, in the hidden text a reader and
+  a find both reach.
+- At the default 400px nothing moves but the hair and the frayed arm ends,
+  whose outlines were 0.8 of a pixel and are now 1.
+
 ## v3.0.1 — 2026-11-26
 
 - **Fixed:** a dancer with both a `sign` and an `href` put the same words in
