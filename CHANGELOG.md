@@ -6,7 +6,7 @@ look when a dancer starts looking different. An embed still on `@2` stays on
 the last `v2.x.x` tag and goes on working, crowd and all; it simply stops
 getting anything new.
 
-## Unreleased
+## v3.1.0 — 2026-11-27
 
 - **Fixed:** a small embed looked washed out and said nothing. Everything is
   drawn against a 1000-unit-tall dancer, which is honest for a shape and
