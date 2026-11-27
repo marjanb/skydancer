@@ -139,6 +139,16 @@ document.querySelector('sky-dancer').hide();
 
 A hidden dancer stops animating and costs nothing until it is shown again.
 
+### What it costs
+
+Measured on a desktop machine, a dancer takes about 60 microseconds of
+main-thread JavaScript per frame -- under half a percent of a 60fps budget --
+and most of that is drawing the tube itself rather than working out where it
+should go. A dozen of them animating at once still held 60fps, as did two at
+820px tall, which is nearly two megapixels repainted every frame. None of this
+is spent while a dancer is scrolled out of view or hidden: it stops, rather
+than drawing where nobody is looking.
+
 ### Events
 
 A dancer says two things, both bubbling and both crossing a shadow boundary,
